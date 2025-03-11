@@ -40,24 +40,18 @@ func main() {
 	}
 
 	var wg sync.WaitGroup
-	numWorkers := 3 // Worker pool 3
-	urlChan := make(chan string, len(urls))
+	sem := make(chan struct{}, 5) // Batasi 5 goroutine untuk efisiensi CPU
 
 	// Start worker goroutines
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for url := range urlChan {
-				processURL(url, allowedDomains)
-			}
-		}()
+			sem <- struct{}{}
+			processURL(url, allowedDomains)
+			<-sem
+		}(url)
 	}
-
-	for _, url := range urls {
-		urlChan <- url
-	}
-	close(urlChan)
 
 	wg.Wait()
 }
@@ -101,26 +95,9 @@ func processURL(url string, allowedDomains []string) {
 
 	fmt.Printf("%s [%s]\n", blue("[+]"), azure(url))
 
-	contentChan := make(chan string, 1)
-	errChan := make(chan error, 1)
-
-	go func() {
-		content, err := fetcher.Fetch(url)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		contentChan <- content
-	}()
-
-	var content string
-	select {
-	case content = <-contentChan:
-	case err := <-errChan:
+	content, err := fetcher.Fetch(url)
+	if err != nil {
 		fmt.Printf("%s Gagal mengambil konten: %s\n", blue("[+]"), err)
-		return
-	case <-time.After(10 * time.Second): // Timeout 10 sec
-		fmt.Printf("%s Timeout saat mengambil konten dari %s\n", blue("[+]"), url)
 		return
 	}
 
