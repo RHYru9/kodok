@@ -4,15 +4,17 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/rhyru9/kodok/internal/fetcher"
-	"github.com/rhyru9/kodok/internal/parser"
-	"github.com/rhyru9/kodok/internal/scanner"
-	"github.com/rhyru9/kodok/internal/utils"
 	"net/url"
 	"os"
 	"regexp"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/rhyru9/kodok/internal/fetcher"
+	"github.com/rhyru9/kodok/internal/parser"
+	"github.com/rhyru9/kodok/internal/scanner"
+	"github.com/rhyru9/kodok/internal/utils"
 
 	"github.com/fatih/color"
 )
@@ -38,17 +40,24 @@ func main() {
 	}
 
 	var wg sync.WaitGroup
-	sem := make(chan struct{}, 5) // Batasi 5 goroutine untuk efisiensi CPU
+	numWorkers := 3 // Worker pool 3
+	urlChan := make(chan string, len(urls))
+
+	// Start worker goroutines
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for url := range urlChan {
+				processURL(url, allowedDomains)
+			}
+		}()
+	}
 
 	for _, url := range urls {
-		wg.Add(1)
-		go func(url string) {
-			defer wg.Done()
-			sem <- struct{}{}
-			processURL(url, allowedDomains)
-			<-sem
-		}(url)
+		urlChan <- url
 	}
+	close(urlChan)
 
 	wg.Wait()
 }
@@ -92,37 +101,47 @@ func processURL(url string, allowedDomains []string) {
 
 	fmt.Printf("%s [%s]\n", blue("[+]"), azure(url))
 
-	content, err := fetcher.Fetch(url)
-	if err != nil {
+	contentChan := make(chan string, 1)
+	errChan := make(chan error, 1)
+
+	go func() {
+		content, err := fetcher.Fetch(url)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		contentChan <- content
+	}()
+
+	var content string
+	select {
+	case content = <-contentChan:
+	case err := <-errChan:
 		fmt.Printf("%s Gagal mengambil konten: %s\n", blue("[+]"), err)
+		return
+	case <-time.After(10 * time.Second): // Timeout 10 sec
+		fmt.Printf("%s Timeout saat mengambil konten dari %s\n", blue("[+]"), url)
 		return
 	}
 
-	uniquePaths := make(map[string]bool)
-	uniqueSecrets := make(map[string]bool)
-	var mu sync.Mutex
+	uniquePaths := sync.Map{}
+	uniqueSecrets := sync.Map{}
 
 	paths := parser.Parse(content)
 	for _, path := range paths {
 		if validPathRegex.MatchString(path) && isAllowedDomain(path, allowedDomains) {
-			mu.Lock()
-			if !uniquePaths[path] {
-				uniquePaths[path] = true
+			if _, loaded := uniquePaths.LoadOrStore(path, true); !loaded {
 				fmt.Printf("%s %-25s %s\n", azure("[+] found path  |"), magenta(formatMultiline(path)), "")
 			}
-			mu.Unlock()
 		}
 	}
 
 	secrets := scanner.Scan(content)
 	for _, secret := range secrets {
 		if isAllowedDomain(secret, allowedDomains) {
-			mu.Lock()
-			if !uniqueSecrets[secret] {
-				uniqueSecrets[secret] = true
+			if _, loaded := uniqueSecrets.LoadOrStore(secret, true); !loaded {
 				fmt.Printf("%s %-25s %s\n", blue("[+] found API   |"), red(formatMultiline(secret)), orange("possibly"))
 			}
-			mu.Unlock()
 		}
 	}
 }
