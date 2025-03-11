@@ -1,0 +1,35 @@
+# Binaries
+*.exe
+*.out
+*.dll
+
+# Compiled files
+*.o
+*.a
+*.so
+
+# Go-specific files
+bin/
+pkg/
+*.test
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs & Temp files
+*.log
+*.tmp
+*.cache
+
+# Dependency files
+vendor/
+
+# Ignore Go modules cache (if using Go modules)
+go.sum
+
+# System files
+.DS_Store
+Thumbs.db
