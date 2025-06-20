@@ -8,13 +8,12 @@ A sophisticated JavaScript scanner designed to analyze JavaScript files for path
 - Custom header support for authenticated scanning
 - Domain filtering capabilities
 - Automatic sensitive data masking
-- Clean, professional output format
 
 ## Installation
 
 ```bash
 # Install directly from GitHub
-go install github.com/rhyru9@latest
+go install github.com/rhyru9/kodok@latest
 ```
 
 ## Basic Usage
