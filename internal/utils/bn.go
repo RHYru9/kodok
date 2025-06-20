@@ -20,5 +20,5 @@ func PrintBanner() {
 	red := color.New(color.FgRed).SprintFunc()
 
 	fmt.Println(darkPink(banner))
-	fmt.Printf("               Version [%s] [%s]\n\n", red("0.0.1"), blueItalic("github.com/rhyru9/kodok"))
+	fmt.Printf("               Version [%s] [%s]\n\n", red("0.0.6"), blueItalic("github.com/rhyru9/kodok"))
 }
