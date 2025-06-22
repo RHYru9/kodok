@@ -9,379 +9,364 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/rhyru9/kodok/internal/fetcher"
 	"github.com/rhyru9/kodok/internal/parser"
 	"github.com/rhyru9/kodok/internal/scanner"
 	"github.com/rhyru9/kodok/internal/utils"
-
 	"github.com/fatih/color"
 )
 
-// Command line flags
-var (
-	urlFile       = flag.String("fj", "", "File berisi daftar URL JavaScript untuk diproses")
-	singleURL     = flag.String("u", "", "URL tunggal yang akan diproses")
-	allowedDomain = flag.String("ad", "", "Domain yang diizinkan dalam output (pisahkan dengan koma)")
-	headers       headerFlags
-)
+type headersFlag []string
 
-// headerFlags adalah custom flag type untuk multiple headers
-type headerFlags []string
-
-func (h *headerFlags) String() string {
+func (h *headersFlag) String() string {
 	return strings.Join(*h, ", ")
 }
 
-func (h *headerFlags) Set(value string) error {
+func (h *headersFlag) Set(value string) error {
 	*h = append(*h, value)
 	return nil
 }
 
-// Regular expression untuk validasi path
 var (
-	validPathRegex = regexp.MustCompile(`^(https?://|/)[^\s]+`)
-	dataURIRegex   = regexp.MustCompile(`(?i)^data:[^;]+;base64,`)
+	urlFile       = flag.String("fj", "", "File daftar URL JS")
+	singleURL     = flag.String("u", "", "URL tunggal untuk diproses")
+	allowedDomain = flag.String("ad", "", "Domain yang diperbolehkan dalam output (pisahkan dengan koma)")
+	outputFile    = flag.String("o", "", "File output untuk menyimpan hasil")
+	headers       headersFlag
+	showHelp      = flag.Bool("h", false, "Show help")
 )
 
-// Color definitions
-var (
-	blue    = color.New(color.FgBlue).SprintFunc()
-	cyan    = color.New(color.FgCyan).SprintFunc()
-	magenta = color.New(color.FgMagenta).SprintFunc()
-	red     = color.New(color.FgRed).SprintFunc()
-	yellow  = color.New(color.FgYellow).SprintFunc()
-	green   = color.New(color.FgGreen).SprintFunc()
-)
-
-const (
-	workerCount = 3
-	timeout     = 10 * time.Second
-)
+var validPathRegex = regexp.MustCompile(`^(https?://|/)[^\s]+`)
 
 func main() {
-	flag.Var(&headers, "H", "Custom HTTP headers (dapat digunakan multiple kali)\nContoh: -H 'Cookie: test=value' -H 'Authorization: Bearer token'")
-	flag.Parse()
+	flag.Var(&headers, "H", "Custom header (dapat digunakan berkali-kali)")
+	
+	// Show banner first, before parsing flags
 	utils.PrintBanner()
+	
+	flag.Parse()
+	
+	// Show usage if help flag is used or no arguments provided
+	if *showHelp || (flag.NArg() == 0 && *singleURL == "" && *urlFile == "") {
+		showUsage()
+		return
+	}
 
 	allowedDomains := parseAllowedDomains(*allowedDomain)
 	customHeaders := parseHeaders(headers)
 	urls := getURLs()
 
 	if len(urls) == 0 {
-		fmt.Printf("%s Tidak ada URL yang diberikan. Gunakan -fj untuk file atau -u untuk URL tunggal.\n", 
-			red("[!]"))
-		fmt.Printf("%s Contoh: %s -u https://example.com/app.js\n", 
-			cyan("[i]"), os.Args[0])
-		fmt.Printf("%s Dengan headers: %s -u https://example.com/app.js -H 'Cookie: session=abc123'\n", 
-			cyan("[i]"), os.Args[0])
+		fmt.Println("Tidak ada URL yang diberikan. Gunakan -fj untuk file atau -u untuk URL tunggal.")
+		showUsage()
 		return
 	}
 
-	fmt.Printf("%s Memproses %d URL dengan %d worker...\n", 
-		green("[+]"), len(urls), workerCount)
-	
+	// Display header information
 	if len(customHeaders) > 0 {
-		fmt.Printf("%s Menggunakan %d custom headers\n", 
-			cyan("[i]"), len(customHeaders))
+		blue := color.New(color.FgBlue).SprintFunc()
+		cyan := color.New(color.FgCyan).SprintFunc()
+		fmt.Printf("%s %s\n", blue("[i] Using"), cyan(fmt.Sprintf("%d custom headers", len(customHeaders))))
 		for key, value := range customHeaders {
-			// Mask sensitive headers
-			displayValue := value
-			if isSensitiveHeader(key) {
-				displayValue = maskSensitiveValue(value)
-			}
-			fmt.Printf("%s   %s: %s\n", cyan("│"), magenta(key), displayValue)
+			maskedValue := maskSensitiveHeader(key, value)
+			fmt.Printf("│   %s: %s\n", key, maskedValue)
 		}
+		fmt.Println()
 	}
-	fmt.Println()
 
-	processURLsConcurrently(urls, allowedDomains, customHeaders)
+	// Setup output file if specified
+	var outputWriter *os.File
+	if *outputFile != "" {
+		var err error
+		outputWriter, err = os.Create(*outputFile)
+		if err != nil {
+			fmt.Printf("Gagal membuat file output: %s\n", err)
+			return
+		}
+		defer outputWriter.Close()
+		fmt.Printf("Output akan disimpan ke: %s\n", *outputFile)
+	}
+
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, 5) // Batasi 5 goroutine untuk efisiensi CPU
+	var results []ScanResult
+	var resultsMutex sync.Mutex
+
+	for _, url := range urls {
+		wg.Add(1)
+		go func(url string) {
+			defer wg.Done()
+			sem <- struct{}{}
+			result := processURL(url, allowedDomains, customHeaders)
+			if outputWriter != nil {
+				resultsMutex.Lock()
+				results = append(results, result)
+				resultsMutex.Unlock()
+			}
+			<-sem
+		}(url)
+	}
+	wg.Wait()
+
+	// Write results to file if output file is specified
+	if outputWriter != nil {
+		writeResultsToFile(outputWriter, results)
+		fmt.Printf("\nHasil berhasil disimpan ke: %s\n", *outputFile)
+	}
 }
 
-// getURLs mengambil daftar URL dari berbagai sumber input
 func getURLs() []string {
 	var urls []string
 
-	switch {
-	case *urlFile != "":
-		urls = readURLsFromFile(*urlFile)
-	case *singleURL != "":
+	if *urlFile != "" {
+		file, err := os.Open(*urlFile)
+		if err != nil {
+			fmt.Printf("Gagal membuka file: %s\n", err)
+			return nil
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			urls = append(urls, scanner.Text())
+		}
+	} else if *singleURL != "" {
 		urls = append(urls, *singleURL)
-	default:
-		urls = readURLsFromStdin()
-	}
-
-	return filterValidURLs(urls)
-}
-
-// readURLsFromFile membaca URL dari file
-func readURLsFromFile(filename string) []string {
-	file, err := os.Open(filename)
-	if err != nil {
-		fmt.Printf("%s Gagal membuka file %s: %v\n", red("[!]"), filename, err)
-		return nil
-	}
-	defer file.Close()
-
-	var urls []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line != "" && !strings.HasPrefix(line, "#") {
-			urls = append(urls, line)
+	} else {
+		stat, _ := os.Stdin.Stat()
+		if (stat.Mode() & os.ModeCharDevice) == 0 {
+			scanner := bufio.NewScanner(os.Stdin)
+			for scanner.Scan() {
+				urls = append(urls, scanner.Text())
+			}
 		}
 	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Printf("%s Error membaca file: %v\n", red("[!]"), err)
-	}
-
 	return urls
 }
 
-// readURLsFromStdin membaca URL dari standard input
-func readURLsFromStdin() []string {
-	stat, err := os.Stdin.Stat()
-	if err != nil || (stat.Mode()&os.ModeCharDevice) != 0 {
-		return nil
-	}
-
-	var urls []string
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line != "" {
-			urls = append(urls, line)
-		}
-	}
-
-	return urls
+// ScanResult holds the results for a single URL scan
+type ScanResult struct {
+	URL         string
+	Paths       []string
+	Secrets     []string
+	PathCount   int
+	SecretCount int
+	Error       string
 }
 
-// filterValidURLs memfilter URL yang valid
-func filterValidURLs(urls []string) []string {
-	var validURLs []string
-	for _, rawURL := range urls {
-		if isValidURL(rawURL) || isLocalFile(rawURL) {
-			validURLs = append(validURLs, rawURL)
-		} else {
-			fmt.Printf("%s URL tidak valid diabaikan: %s\n", yellow("[!]"), rawURL)
-		}
-	}
-	return validURLs
-}
+func processURL(url string, allowedDomains []string, customHeaders map[string]string) ScanResult {
+	// Color definitions
+	blue := color.New(color.FgBlue, color.Bold).SprintFunc()
+	cyan := color.New(color.FgCyan).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	red := color.New(color.FgRed).SprintFunc()
+	white := color.New(color.FgWhite).SprintFunc()
 
-// isValidURL memeriksa apakah string adalah URL yang valid
-func isValidURL(rawURL string) bool {
-	if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
-		return false
-	}
-	_, err := url.Parse(rawURL)
-	return err == nil
-}
+	// Header dengan separator
+	fmt.Printf("\n%s\n", strings.Repeat("─", 80))
+	fmt.Printf("%s %s\n", blue("🔍 Scanning:"), cyan(url))
+	fmt.Printf("%s\n", strings.Repeat("─", 80))
 
-// processURLsConcurrently memproses URL secara concurrent
-func processURLsConcurrently(urls []string, allowedDomains []string, customHeaders map[string]string) {
-	var wg sync.WaitGroup
-	urlChan := make(chan string, len(urls))
-
-	// Start worker goroutines
-	for i := 0; i < workerCount; i++ {
-		wg.Add(1)
-		go func(workerID int) {
-			defer wg.Done()
-			for url := range urlChan {
-				processURL(url, allowedDomains, customHeaders, workerID)
-			}
-		}(i + 1)
-	}
-
-	// Send URLs to channel
-	for _, url := range urls {
-		urlChan <- url
-	}
-	close(urlChan)
-
-	wg.Wait()
-	fmt.Printf("\n%s Pemrosesan selesai.\n", green("[✓]"))
-}
-
-// processURL memproses satu URL dan mencari path serta secrets
-func processURL(target string, allowedDomains []string, customHeaders map[string]string, workerID int) {
-	fmt.Printf("%s [Worker-%d] Memproses: %s\n", blue("[+]"), workerID, cyan(target))
-
-	content, err := getContent(target, customHeaders)
+	content, err := fetcher.FetchWithHeaders(url, customHeaders)
 	if err != nil {
-		fmt.Printf("%s [Worker-%d] Gagal mengambil konten dari %s: %v\n", 
-			red("[!]"), workerID, target, err)
-		return
+		fmt.Printf("%s %s %s\n", red("✗"), white("Error:"), err)
+		return ScanResult{
+			URL:   url,
+			Error: err.Error(),
+		}
 	}
 
-	if len(content) == 0 {
-		fmt.Printf("%s [Worker-%d] Konten kosong dari %s\n", 
-			yellow("[!]"), workerID, target)
-		return
+	uniquePaths := make(map[string]bool)
+	uniqueSecrets := make(map[string]bool)
+	var mu sync.Mutex
+	pathCount := 0
+	secretCount := 0
+	var resultPaths []string
+	var resultSecrets []string
+
+	// Process paths
+	paths := parser.Parse(content)
+	if len(paths) > 0 {
+		fmt.Printf("\n%s %s\n", green("📂"), blue("Paths Found:"))
+		fmt.Printf("%s\n", strings.Repeat("─", 40))
 	}
-
-	// Process paths and secrets concurrently
-	var wg sync.WaitGroup
-	pathResults := make(chan string, 100)
-	secretResults := make(chan string, 100)
-
-	// Parse paths
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer close(pathResults)
-		
-		paths := parser.Parse(content)
-		uniquePaths := make(map[string]bool)
-		
-		for _, path := range paths {
-			if validPathRegex.MatchString(path) && 
-			   isAllowedDomain(path, allowedDomains) && 
-			   !isDataURI(path) && 
-			   !isLikelyBase64Content(path) {
-				if !uniquePaths[path] {
-					uniquePaths[path] = true
-					pathResults <- path
-				}
-			}
-		}
-	}()
-
-	// Scan for secrets
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer close(secretResults)
-		
-		secrets := scanner.Scan(content)
-		uniqueSecrets := make(map[string]bool)
-		
-		for _, secret := range secrets {
-			if isAllowedDomain(secret, allowedDomains) && 
-			   !isDataURI(secret) && 
-			   !isLikelyBase64Content(secret) {
-				if !uniqueSecrets[secret] {
-					uniqueSecrets[secret] = true
-					secretResults <- secret
-				}
-			}
-		}
-	}()
-
-	// Collect results
-	go func() {
-		wg.Wait()
-	}()
-
-	// Print results as they come
-	var pathCount, secretCount int
 	
-	for {
-		select {
-		case path, ok := <-pathResults:
-			if !ok {
-				pathResults = nil
-			} else {
-				fmt.Printf("  %s %-20s %s\n", cyan("│ PATH   │"), magenta(path), "")
+	for _, path := range paths {
+		if validPathRegex.MatchString(path) && isAllowedDomain(path, allowedDomains) {
+			mu.Lock()
+			if !uniquePaths[path] {
+				uniquePaths[path] = true
 				pathCount++
+				resultPaths = append(resultPaths, path)
+				fmt.Printf("  %s %s\n", green("→"), formatPath(path))
 			}
-		case secret, ok := <-secretResults:
-			if !ok {
-				secretResults = nil
-			} else {
-				fmt.Printf("  %s %-20s %s\n", blue("│ SECRET │"), red(secret), yellow("(possible)"))
-				secretCount++
-			}
+			mu.Unlock()
+		}
+	}
+
+	// Process secrets
+	secrets := scanner.Scan(content)
+	filteredSecrets := filterUniqueSecrets(secrets, allowedDomains)
+	
+	if len(filteredSecrets) > 0 {
+		fmt.Printf("\n%s %s\n", yellow("🔑"), blue("Secrets Found:"))
+		fmt.Printf("%s\n", strings.Repeat("─", 40))
+	}
+
+	for _, secret := range filteredSecrets {
+		mu.Lock()
+		if !uniqueSecrets[secret] {
+			uniqueSecrets[secret] = true
+			secretCount++
+			resultSecrets = append(resultSecrets, secret)
+			fmt.Printf("  %s %s\n", red("⚠"), formatSecret(secret))
+		}
+		mu.Unlock()
+	}
+
+	// Summary
+	fmt.Printf("\n%s\n", strings.Repeat("─", 40))
+	fmt.Printf("%s %s: %d | %s: %d\n", 
+		blue("📊 Summary"), 
+		green("Paths"), pathCount, 
+		yellow("Secrets"), secretCount)
+	fmt.Printf("%s\n", strings.Repeat("═", 80))
+
+	return ScanResult{
+		URL:         url,
+		Paths:       resultPaths,
+		Secrets:     resultSecrets,
+		PathCount:   pathCount,
+		SecretCount: secretCount,
+	}
+}
+
+func filterUniqueSecrets(secrets []string, allowedDomains []string) []string {
+	var filtered []string
+	seen := make(map[string]bool)
+	
+	for _, secret := range secrets {
+		if isAllowedDomainForSecret(secret, allowedDomains) && !seen[secret] {
+			seen[secret] = true
+			filtered = append(filtered, secret)
+		}
+	}
+	
+	return filtered
+}
+
+func formatPath(path string) string {
+	cyan := color.New(color.FgCyan).SprintFunc()
+	
+	if len(path) <= 70 {
+		return cyan(path)
+	}
+	
+	// Truncate long paths nicely
+	return cyan(path[:67] + "...")
+}
+
+func formatSecret(secret string) string {
+	red := color.New(color.FgRed).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	
+	// Split secret type from value
+	parts := strings.SplitN(secret, ": ", 2)
+	if len(parts) == 2 {
+		secretType := strings.ToUpper(parts[0])
+		secretValue := parts[1]
+		
+		// Truncate long secret values
+		if len(secretValue) > 50 {
+			secretValue = secretValue[:47] + "..."
 		}
 		
-		if pathResults == nil && secretResults == nil {
-			break
+		return fmt.Sprintf("%s %s", yellow(secretType+":"), red(secretValue))
+	}
+	
+	// Fallback for secrets without clear separation
+	if len(secret) > 50 {
+		secret = secret[:47] + "..."
+	}
+	return red(secret)
+}
+
+func showUsage() {
+	blue := color.New(color.FgBlue, color.Bold).SprintFunc()
+	cyan := color.New(color.FgCyan).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	
+	fmt.Printf("\n%s\n", blue("KODOK - JavaScript Security Scanner"))
+	fmt.Printf("%s\n\n", strings.Repeat("═", 50))
+	
+	fmt.Printf("%s\n", blue("📋 Basic Usage:"))
+	fmt.Printf("  %s\n", green("./kodok -u https://example.com/app.js"))
+	fmt.Printf("  %s\n", green("./kodok -fj urls.txt"))
+	fmt.Printf("  %s\n\n", green("./kodok -u https://example.com/app.js -o results.txt"))
+	
+	fmt.Printf("%s\n", blue("🔐 With Authentication:"))
+	fmt.Printf("  %s\n", cyan("./kodok -u https://example.com/app.js -H 'Cookie: session=abc123'"))
+	fmt.Printf("  %s\n", cyan("./kodok -u https://example.com/api.js -H 'Authorization: Bearer token123'"))
+	fmt.Printf("  %s\n\n", cyan("./kodok -fj urls.txt -H 'X-API-Key: your-key' -o results.txt"))
+	
+	fmt.Printf("%s\n", blue("⚙️  Command Options:"))
+	fmt.Printf("  %s  %s\n", yellow("-u"), "Target URL to scan")
+	fmt.Printf("  %s  %s\n", yellow("-fj"), "File containing JavaScript URLs")
+	fmt.Printf("  %s  %s\n", yellow("-H"), "Custom header (can be used multiple times)")
+	fmt.Printf("  %s  %s\n", yellow("-ad"), "Allow domains (comma-separated)")
+	fmt.Printf("  %s  %s\n", yellow("-o"), "Output file for results")
+	fmt.Printf("  %s  %s\n", yellow("-h"), "Show this help message")
+	fmt.Printf("\n%s\n", strings.Repeat("═", 50))
+}
+
+func parseHeaders(headersList []string) map[string]string {
+	headers := make(map[string]string)
+	for _, header := range headersList {
+		parts := strings.SplitN(header, ":", 2)
+		if len(parts) == 2 {
+			key := strings.TrimSpace(parts[0])
+			value := strings.TrimSpace(parts[1])
+			headers[key] = value
 		}
 	}
-
-	fmt.Printf("%s [Worker-%d] Selesai: %s - Ditemukan %d path, %d secret\n\n", 
-		green("[✓]"), workerID, target, pathCount, secretCount)
+	return headers
 }
 
-// getContent mengambil konten dari URL atau file lokal
-func getContent(target string, customHeaders map[string]string) (string, error) {
-	if isLocalFile(target) {
-		return readLocalFile(target)
+func maskSensitiveHeader(key, value string) string {
+	sensitiveHeaders := []string{
+		"authorization", "cookie", "x-api-key", "api-key", 
+		"x-auth-token", "auth-token", "access-token", "bearer",
 	}
-	return fetchURL(target, customHeaders)
+	
+	lowerKey := strings.ToLower(key)
+	for _, sensitive := range sensitiveHeaders {
+		if strings.Contains(lowerKey, sensitive) {
+			if len(value) <= 8 {
+				return strings.Repeat("*", len(value))
+			}
+			// Show first 4 and last 4 characters with stars in between
+			return value[:4] + strings.Repeat("*", len(value)-8) + value[len(value)-4:]
+		}
+	}
+	return value
 }
 
-// isLocalFile memeriksa apakah path adalah file lokal
-func isLocalFile(path string) bool {
-	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
-		return false
-	}
-	_, err := os.Stat(path)
-	return err == nil
-}
-
-// readLocalFile membaca konten dari file lokal
-func readLocalFile(filePath string) (string, error) {
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		return "", fmt.Errorf("gagal membaca file %s: %w", filePath, err)
-	}
-	return string(content), nil
-}
-
-// fetchURL mengambil konten dari URL dengan timeout dan custom headers
-func fetchURL(target string, customHeaders map[string]string) (string, error) {
-	type result struct {
-		content string
-		err     error
-	}
-
-	resultChan := make(chan result, 1)
-
-	go func() {
-		content, err := fetcher.FetchWithHeaders(target, customHeaders)
-		resultChan <- result{content: content, err: err}
-	}()
-
-	select {
-	case res := <-resultChan:
-		return res.content, res.err
-	case <-time.After(timeout):
-		return "", fmt.Errorf("timeout setelah %v saat mengambil konten dari %s", timeout, target)
-	}
-}
-
-// parseAllowedDomains memparse string domain yang diizinkan
-func parseAllowedDomains(domainStr string) []string {
-	if domainStr == "" {
+func parseAllowedDomains(ad string) []string {
+	if ad == "" {
 		return nil
 	}
-
-	domains := strings.Split(domainStr, ",")
-	var cleanedDomains []string
-
-	for _, domain := range domains {
-		cleaned := strings.TrimSpace(domain)
-		if cleaned != "" {
-			cleanedDomains = append(cleanedDomains, cleaned)
-		}
+	domains := strings.Split(ad, ",")
+	for i, domain := range domains {
+		domains[i] = strings.TrimSpace(domain)
 	}
-
-	return cleanedDomains
+	return domains
 }
 
-// isAllowedDomain memeriksa apakah URL termasuk dalam domain yang diizinkan
 func isAllowedDomain(rawURL string, allowedDomains []string) bool {
 	if len(allowedDomains) == 0 {
-		return true
-	}
-
-	// Handle relative paths
-	if strings.HasPrefix(rawURL, "/") {
 		return true
 	}
 
@@ -391,119 +376,97 @@ func isAllowedDomain(rawURL string, allowedDomains []string) bool {
 	}
 
 	host := parsedURL.Hostname()
-	if host == "" {
-		return true // Allow relative URLs
-	}
-
 	for _, domain := range allowedDomains {
-		if strings.HasSuffix(host, domain) || host == domain {
+		if strings.HasSuffix(host, domain) {
 			return true
 		}
 	}
-
 	return false
 }
 
-// parseHeaders memparse header flags menjadi map
-func parseHeaders(headerFlags []string) map[string]string {
-	headers := make(map[string]string)
-	
-	for _, header := range headerFlags {
-		// Parse header dalam format "Key: Value"
-		parts := strings.SplitN(header, ":", 2)
-		if len(parts) == 2 {
-			key := strings.TrimSpace(parts[0])
-			value := strings.TrimSpace(parts[1])
-			if key != "" && value != "" {
-				headers[key] = value
-			}
-		} else {
-			fmt.Printf("%s Header format tidak valid diabaikan: %s\n", yellow("[!]"), header)
-			fmt.Printf("%s Format yang benar: 'Key: Value'\n", cyan("[i]"))
-		}
-	}
-	
-	return headers
-}
-
-// isSensitiveHeader memeriksa apakah header mengandung informasi sensitif
-func isSensitiveHeader(key string) bool {
-	sensitiveHeaders := []string{
-		"authorization", "cookie", "x-api-key", "api-key", 
-		"x-auth-token", "auth-token", "x-access-token", 
-		"access-token", "bearer", "jwt", "session",
-	}
-	
-	keyLower := strings.ToLower(key)
-	for _, sensitive := range sensitiveHeaders {
-		if strings.Contains(keyLower, sensitive) {
-			return true
-		}
-	}
-	
-	return false
-}
-
-// maskSensitiveValue menyembunyikan sebagian nilai header sensitif
-func maskSensitiveValue(value string) string {
-	if len(value) <= 8 {
-		return strings.Repeat("*", len(value))
-	}
-	
-	// Show first 4 and last 4 characters, mask the middle
-	prefix := value[:4]
-	suffix := value[len(value)-4:]
-	middle := strings.Repeat("*", len(value)-8)
-	
-	return prefix + middle + suffix
-}
-
-// isDataURI memeriksa apakah string adalah data URI
-func isDataURI(path string) bool {
-	return dataURIRegex.MatchString(path) || 
-		   strings.HasPrefix(strings.ToLower(path), "data:") ||
-		   strings.HasPrefix(strings.ToLower(path), "blob:")
-}
-
-// isLikelyBase64Content memeriksa apakah string kemungkinan berisi base64
-func isLikelyBase64Content(path string) bool {
-	// Skip very long strings that are likely base64
-	if len(path) > 500 {
+func isAllowedDomainForSecret(secret string, allowedDomains []string) bool {
+	if len(allowedDomains) == 0 {
 		return true
 	}
+
+	// For secrets, be more permissive since they might not contain URLs
+	for _, domain := range allowedDomains {
+		if strings.Contains(secret, domain) {
+			return true
+		}
+	}
 	
-	// Check for base64 patterns
-	if len(path) > 100 {
-		// Count base64 characters
-		base64Chars := 0
-		totalChars := len(path)
-		
-		for _, r := range path {
-			if (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') || 
-			   (r >= '0' && r <= '9') || r == '+' || r == '/' || r == '=' {
-				base64Chars++
+	// Allow secrets that don't contain domains (since secrets might not contain domains)
+	return true
+}
+
+func extractSecretValue(formattedSecret string) string {
+	// Extract the actual secret value from formatted string
+	parts := strings.SplitN(formattedSecret, ": ", 2)
+	if len(parts) == 2 {
+		return parts[1]
+	}
+	return formattedSecret
+}
+
+func writeResultsToFile(file *os.File, results []ScanResult) {
+	writer := bufio.NewWriter(file)
+	defer writer.Flush()
+
+	// Write header
+	writer.WriteString("=====================================\n")
+	writer.WriteString("           KODOK SCAN RESULTS        \n")
+	writer.WriteString("=====================================\n\n")
+
+	totalPaths := 0
+	totalSecrets := 0
+	totalUrls := 0
+	successfulScans := 0
+
+	for _, result := range results {
+		totalUrls++
+		writer.WriteString(fmt.Sprintf("URL: %s\n", result.URL))
+		writer.WriteString(strings.Repeat("-", 80) + "\n")
+
+		if result.Error != "" {
+			writer.WriteString(fmt.Sprintf("ERROR: %s\n\n", result.Error))
+			continue
+		}
+
+		successfulScans++
+		totalPaths += result.PathCount
+		totalSecrets += result.SecretCount
+
+		// Write paths
+		if len(result.Paths) > 0 {
+			writer.WriteString("PATHS FOUND:\n")
+			for i, path := range result.Paths {
+				writer.WriteString(fmt.Sprintf("  %d. %s\n", i+1, path))
 			}
+			writer.WriteString("\n")
 		}
-		
-		// If more than 80% are base64 characters, likely base64
-		if float64(base64Chars)/float64(totalChars) > 0.8 {
-			return true
+
+		// Write secrets
+		if len(result.Secrets) > 0 {
+			writer.WriteString("SECRETS FOUND:\n")
+			for i, secret := range result.Secrets {
+				writer.WriteString(fmt.Sprintf("  %d. %s\n", i+1, secret))
+			}
+			writer.WriteString("\n")
 		}
+
+		// Write summary for this URL
+		writer.WriteString(fmt.Sprintf("SUMMARY: Paths: %d | Secrets: %d\n", result.PathCount, result.SecretCount))
+		writer.WriteString(strings.Repeat("=", 80) + "\n\n")
 	}
-	
-	// Check for common base64 image signatures
-	base64ImagePatterns := []string{
-		"iVBORw0KGgoAAAANSUhEUgAA", // PNG signature
-		"R0lGODlhAQABAIAAAAAAAP",   // GIF signature  
-		"/9j/4AAQSkZJRgABAQAAAQABAAD", // JPEG signature
-		"PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmci", // SVG signature
-	}
-	
-	for _, pattern := range base64ImagePatterns {
-		if strings.Contains(path, pattern) {
-			return true
-		}
-	}
-	
-	return false
+
+	// Write overall summary
+	writer.WriteString("OVERALL SUMMARY:\n")
+	writer.WriteString(strings.Repeat("-", 40) + "\n")
+	writer.WriteString(fmt.Sprintf("Total URLs Processed: %d\n", totalUrls))
+	writer.WriteString(fmt.Sprintf("Successful Scans: %d\n", successfulScans))
+	writer.WriteString(fmt.Sprintf("Failed Scans: %d\n", totalUrls-successfulScans))
+	writer.WriteString(fmt.Sprintf("Total Paths Found: %d\n", totalPaths))
+	writer.WriteString(fmt.Sprintf("Total Secrets Found: %d\n", totalSecrets))
+	writer.WriteString(strings.Repeat("=", 40) + "\n")
 }

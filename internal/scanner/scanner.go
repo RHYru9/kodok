@@ -52,6 +52,11 @@ func Scan(content string) []string {
 		`(?i)[\"']?www[_-]?googleapis[_-]?com[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
 		`(?i)[\"']?wpt[_-]?ssh[_-]?private[_-]?key[_-]?base64[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
 		`(?i)[\"']?wpt[_-]?ssh[_-]?connect[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
+		`(?i)[\"']?aes[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
+		`(?i)[\"']?auth[_-]?token[_-]?cookie[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
+		`(?i)[\"']?local[_-]?storage[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
+		`(?i)[\"']?local[_-]?storage[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
+		`(?i)[\"']?secret[_-]?sso[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
 		`(?i)[\"']?wpt[_-]?report[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
 		`(?i)[\"']?wpt[_-]?prepare[_-]?dir[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
 		`(?i)[\"']?wpt[_-]?db[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
@@ -498,6 +503,11 @@ func Scan(content string) []string {
 		`(?i)[\"']?gcloud[_-]?bucket[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
 		`(?i)[\"']?ftp[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
 		`(?i)[\"']?ftp[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
+		`(?i)[\"']?aes[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
+		`(?i)[\"']?auth[_-]?token[_-]?cookie[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
+		`(?i)[\"']?auth[_-]?user[_-]?active[_-]?role[_-]?local[_-]?storage[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
+		`(?i)[\"']?participate[_-]?true[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
+		`(?i)[\"']?local[_-]?storage[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
 		`(?i)[\"']?ftp[_-]?pw[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
 		`(?i)[\"']?ftp[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
 		`(?i)[\"']?ftp[_-]?login[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`,
@@ -733,1405 +743,1419 @@ func Scan(content string) []string {
 	for _, pattern := range secretsPatterns {
 		regex := regexp.MustCompile(pattern)
 		matches := regex.FindAllString(content, -1)
+
 		for _, match := range matches {
-			switch {
-			case regexp.MustCompile(`Bearer`).MatchString(match):
-				secretsFound = append(secretsFound, "authorization custom: "+match)
-			case regexp.MustCompile(`AIza`).MatchString(match):
-				secretsFound = append(secretsFound, "Google Maps API: "+match)
-			case regexp.MustCompile(`xoxb`).MatchString(match):
-				secretsFound = append(secretsFound, "Slack: "+match)
-			case regexp.MustCompile(`[0-9a-f]{32}-us`).MatchString(match):
-				secretsFound = append(secretsFound, "Algolia: "+match)
-			case regexp.MustCompile(`(?i)Bearer\s*eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+`).MatchString(match):
-				secretsFound = append(secretsFound, "Authorization: "+match)
-			case regexp.MustCompile(`Bearer\s+([a-fA-F0-9]+)`).MatchString(match):
-				secretsFound = append(secretsFound, "Authorization: "+match)
-			case regexp.MustCompile(`-----BEGIN PRIVATE KEY-----[a-zA-Z0-9\\S]{100`).MatchString(match):
-				secretsFound = append(secretsFound, "private_key: "+match)
-			case regexp.MustCompile(`-----BEGIN RSA PRIVATE KEY-----[a-zA-Z0-9\\S]{100`).MatchString(match):
-				secretsFound = append(secretsFound, "rsa_private_key: "+match)
-			case regexp.MustCompile(`(?i)[\"']?zopim[_-]?account[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "zopim: "+match)
-			case regexp.MustCompile(`(?i)[\"']?zhuliang[_-]?gh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "zhuliang: "+match)
-			case regexp.MustCompile(`(?i)[\"']?zensonatypepassword[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "zensonatypepassword: "+match)
-			case regexp.MustCompile(`(?i)zendesk(_api_token|_key|_token|-travis-github|_url|_username)(\\s|=)`).MatchString(match):
-				secretsFound = append(secretsFound, "zendesk: "+match)
-			case regexp.MustCompile(`(?i)[\"']?yt[_-]?server[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "yt: "+match)
-			case regexp.MustCompile(`(?i)[\"']?yt[_-]?partner[_-]?refresh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "yt: "+match)
-			case regexp.MustCompile(`(?i)[\"']?yt[_-]?partner[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "yt: "+match)
-			case regexp.MustCompile(`(?i)[\"']?yt[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "yt: "+match)
-			case regexp.MustCompile(`(?i)[\"']?yt[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "yt: "+match)
-			case regexp.MustCompile(`(?i)[\"']?yt[_-]?account[_-]?refresh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "yt: "+match)
-			case regexp.MustCompile(`(?i)[\"']?yt[_-]?account[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "yt: "+match)
-			case regexp.MustCompile(`(?i)[\"']?yangshun[_-]?gh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "yangshun: "+match)
-			case regexp.MustCompile(`(?i)[\"']?yangshun[_-]?gh[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "yangshun: "+match)
-			case regexp.MustCompile(`(?i)[\"']?www[_-]?googleapis[_-]?com[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "www: "+match)
-			case regexp.MustCompile(`(?i)[\"']?wpt[_-]?ssh[_-]?private[_-]?key[_-]?base64[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "wpt: "+match)
-			case regexp.MustCompile(`(?i)[\"']?wpt[_-]?ssh[_-]?connect[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "wpt: "+match)
-			case regexp.MustCompile(`(?i)[\"']?wpt[_-]?report[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "wpt: "+match)
-			case regexp.MustCompile(`(?i)[\"']?wpt[_-]?prepare[_-]?dir[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "wpt: "+match)
-			case regexp.MustCompile(`(?i)[\"']?wpt[_-]?db[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "wpt: "+match)
-			case regexp.MustCompile(`(?i)[\"']?wpt[_-]?db[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "wpt: "+match)
-			case regexp.MustCompile(`(?i)[\"']?wporg[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "wporg: "+match)
-			case regexp.MustCompile(`(?i)[\"']?wpjm[_-]?phpunit[_-]?google[_-]?geocode[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "wpjm: "+match)
-			case regexp.MustCompile(`(?i)[\"']?wordpress[_-]?db[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "wordpress: "+match)
-			case regexp.MustCompile(`(?i)[\"']?wordpress[_-]?db[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "wordpress: "+match)
-			case regexp.MustCompile(`(?i)[\"']?wincert[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "wincert: "+match)
-			case regexp.MustCompile(`(?i)[\"']?widget[_-]?test[_-]?server[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "widget: "+match)
-			case regexp.MustCompile(`(?i)[\"']?widget[_-]?fb[_-]?password[_-]?3[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "widget: "+match)
-			case regexp.MustCompile(`(?i)[\"']?widget[_-]?fb[_-]?password[_-]?2[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "widget: "+match)
-			case regexp.MustCompile(`(?i)[\"']?widget[_-]?fb[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "widget: "+match)
-			case regexp.MustCompile(`(?i)[\"']?widget[_-]?basic[_-]?password[_-]?5[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "widget: "+match)
-			case regexp.MustCompile(`(?i)[\"']?widget[_-]?basic[_-]?password[_-]?4[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "widget: "+match)
-			case regexp.MustCompile(`(?i)[\"']?widget[_-]?basic[_-]?password[_-]?3[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "widget: "+match)
-			case regexp.MustCompile(`(?i)[\"']?widget[_-]?basic[_-]?password[_-]?2[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "widget: "+match)
-			case regexp.MustCompile(`(?i)[\"']?widget[_-]?basic[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "widget: "+match)
-			case regexp.MustCompile(`(?i)[\"']?watson[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "watson: "+match)
-			case regexp.MustCompile(`(?i)[\"']?watson[_-]?device[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "watson: "+match)
-			case regexp.MustCompile(`(?i)[\"']?watson[_-]?conversation[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "watson: "+match)
-			case regexp.MustCompile(`(?i)[\"']?wakatime[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "wakatime: "+match)
-			case regexp.MustCompile(`(?i)[\"']?vscetoken[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "vscetoken: "+match)
-			case regexp.MustCompile(`(?i)[\"']?visual[_-]?recognition[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "visual: "+match)
-			case regexp.MustCompile(`(?i)[\"']?virustotal[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "virustotal: "+match)
-			case regexp.MustCompile(`(?i)[\"']?vip[_-]?github[_-]?deploy[_-]?key[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "vip: "+match)
-			case regexp.MustCompile(`(?i)[\"']?vip[_-]?github[_-]?deploy[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "vip: "+match)
-			case regexp.MustCompile(`(?i)[\"']?vip[_-]?github[_-]?build[_-]?repo[_-]?deploy[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "vip: "+match)
-			case regexp.MustCompile(`(?i)[\"']?v[_-]?sfdc[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "v: "+match)
-			case regexp.MustCompile(`(?i)[\"']?v[_-]?sfdc[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "v: "+match)
-			case regexp.MustCompile(`(?i)[\"']?usertravis[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "usertravis: "+match)
-			case regexp.MustCompile(`(?i)[\"']?user[_-]?assets[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "user: "+match)
-			case regexp.MustCompile(`(?i)[\"']?user[_-]?assets[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "user: "+match)
-			case regexp.MustCompile(`(?i)[\"']?use[_-]?ssh[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "use: "+match)
-			case regexp.MustCompile(`(?i)[\"']?us[_-]?east[_-]?1[_-]?elb[_-]?amazonaws[_-]?com[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "us: "+match)
-			case regexp.MustCompile(`(?i)[\"']?urban[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "urban: "+match)
-			case regexp.MustCompile(`(?i)[\"']?urban[_-]?master[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "urban: "+match)
-			case regexp.MustCompile(`(?i)[\"']?urban[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "urban: "+match)
-			case regexp.MustCompile(`(?i)[\"']?unity[_-]?serial[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "unity: "+match)
-			case regexp.MustCompile(`(?i)[\"']?unity[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "unity: "+match)
-			case regexp.MustCompile(`(?i)[\"']?twitteroauthaccesstoken[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "twitteroauthaccesstoken: "+match)
-			case regexp.MustCompile(`(?i)[\"']?twitteroauthaccesssecret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "twitteroauthaccesssecret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?twitter[_-]?consumer[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "twitter: "+match)
-			case regexp.MustCompile(`(?i)[\"']?twitter[_-]?consumer[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "twitter: "+match)
-			case regexp.MustCompile(`(?i)[\"']?twine[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "twine: "+match)
-			case regexp.MustCompile(`(?i)[\"']?twilio[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "twilio: "+match)
-			case regexp.MustCompile(`(?i)[\"']?twilio[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "twilio: "+match)
-			case regexp.MustCompile(`(?i)[\"']?twilio[_-]?configuration[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "twilio: "+match)
-			case regexp.MustCompile(`(?i)[\"']?twilio[_-]?chat[_-]?account[_-]?api[_-]?service[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "twilio: "+match)
-			case regexp.MustCompile(`(?i)[\"']?twilio[_-]?api[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "twilio: "+match)
-			case regexp.MustCompile(`(?i)[\"']?twilio[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "twilio: "+match)
-			case regexp.MustCompile(`(?i)[\"']?trex[_-]?okta[_-]?client[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "trex: "+match)
-			case regexp.MustCompile(`(?i)[\"']?trex[_-]?client[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "trex: "+match)
-			case regexp.MustCompile(`(?i)[\"']?travis[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "travis: "+match)
-			case regexp.MustCompile(`(?i)[\"']?travis[_-]?secure[_-]?env[_-]?vars[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "travis: "+match)
-			case regexp.MustCompile(`(?i)[\"']?travis[_-]?pull[_-]?request[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "travis: "+match)
-			case regexp.MustCompile(`(?i)[\"']?travis[_-]?gh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "travis: "+match)
-			case regexp.MustCompile(`(?i)[\"']?travis[_-]?e2e[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "travis: "+match)
-			case regexp.MustCompile(`(?i)[\"']?travis[_-]?com[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "travis: "+match)
-			case regexp.MustCompile(`(?i)[\"']?travis[_-]?branch[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "travis: "+match)
-			case regexp.MustCompile(`(?i)[\"']?travis[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "travis: "+match)
-			case regexp.MustCompile(`(?i)[\"']?travis[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "travis: "+match)
-			case regexp.MustCompile(`(?i)[\"']?token[_-]?core[_-]?java[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "token: "+match)
-			case regexp.MustCompile(`(?i)[\"']?thera[_-]?oss[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "thera: "+match)
-			case regexp.MustCompile(`(?i)[\"']?tester[_-]?keys[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "tester: "+match)
-			case regexp.MustCompile(`(?i)[\"']?test[_-]?test[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "test: "+match)
-			case regexp.MustCompile(`(?i)[\"']?test[_-]?github[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "test: "+match)
-			case regexp.MustCompile(`(?i)[\"']?tesco[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "tesco: "+match)
-			case regexp.MustCompile(`(?i)[\"']?svn[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "svn: "+match)
-			case regexp.MustCompile(`(?i)[\"']?surge[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "surge: "+match)
-			case regexp.MustCompile(`(?i)[\"']?surge[_-]?login[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "surge: "+match)
-			case regexp.MustCompile(`(?i)[\"']?stripe[_-]?public[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "stripe: "+match)
-			case regexp.MustCompile(`(?i)[\"']?stripe[_-]?private[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "stripe: "+match)
-			case regexp.MustCompile(`(?i)[\"']?strip[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "strip: "+match)
-			case regexp.MustCompile(`(?i)[\"']?strip[_-]?publishable[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "strip: "+match)
-			case regexp.MustCompile(`(?i)[\"']?stormpath[_-]?api[_-]?key[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "stormpath: "+match)
-			case regexp.MustCompile(`(?i)[\"']?stormpath[_-]?api[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "stormpath: "+match)
-			case regexp.MustCompile(`(?i)[\"']?starship[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "starship: "+match)
-			case regexp.MustCompile(`(?i)[\"']?starship[_-]?account[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "starship: "+match)
-			case regexp.MustCompile(`(?i)[\"']?star[_-]?test[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "star: "+match)
-			case regexp.MustCompile(`(?i)[\"']?star[_-]?test[_-]?location[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "star: "+match)
-			case regexp.MustCompile(`(?i)[\"']?star[_-]?test[_-]?bucket[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "star: "+match)
-			case regexp.MustCompile(`(?i)[\"']?star[_-]?test[_-]?aws[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "star: "+match)
-			case regexp.MustCompile(`(?i)[\"']?staging[_-]?base[_-]?url[_-]?runscope[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "staging: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ssmtp[_-]?config[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ssmtp: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sshpass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sshpass: "+match)
-			case regexp.MustCompile(`(?i)[\"']?srcclr[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "srcclr: "+match)
-			case regexp.MustCompile(`(?i)[\"']?square[_-]?reader[_-]?sdk[_-]?repository[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "square: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sqssecretkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sqssecretkey: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sqsaccesskey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sqsaccesskey: "+match)
-			case regexp.MustCompile(`(?i)[\"']?spring[_-]?mail[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "spring: "+match)
-			case regexp.MustCompile(`(?i)[\"']?spotify[_-]?api[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "spotify: "+match)
-			case regexp.MustCompile(`(?i)[\"']?spotify[_-]?api[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "spotify: "+match)
-			case regexp.MustCompile(`(?i)[\"']?spaces[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "spaces: "+match)
-			case regexp.MustCompile(`(?i)[\"']?spaces[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "spaces: "+match)
-			case regexp.MustCompile(`(?i)[\"']?soundcloud[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "soundcloud: "+match)
-			case regexp.MustCompile(`(?i)[\"']?soundcloud[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "soundcloud: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sonatypepassword[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sonatypepassword: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sonatype[_-]?token[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sonatype: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sonatype[_-]?token[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sonatype: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sonatype[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sonatype: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sonatype[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sonatype: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sonatype[_-]?nexus[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sonatype: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sonatype[_-]?gpg[_-]?passphrase[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sonatype: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sonatype[_-]?gpg[_-]?key[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sonatype: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sonar[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sonar: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sonar[_-]?project[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sonar: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sonar[_-]?organization[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sonar: "+match)
-			case regexp.MustCompile(`(?i)[\"']?socrata[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "socrata: "+match)
-			case regexp.MustCompile(`(?i)[\"']?socrata[_-]?app[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "socrata: "+match)
-			case regexp.MustCompile(`(?i)[\"']?snyk[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "snyk: "+match)
-			case regexp.MustCompile(`(?i)[\"']?snyk[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "snyk: "+match)
-			case regexp.MustCompile(`(?i)[\"']?snoowrap[_-]?refresh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "snoowrap: "+match)
-			case regexp.MustCompile(`(?i)[\"']?snoowrap[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "snoowrap: "+match)
-			case regexp.MustCompile(`(?i)[\"']?snoowrap[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "snoowrap: "+match)
-			case regexp.MustCompile(`(?i)[\"']?slate[_-]?user[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "slate: "+match)
-			case regexp.MustCompile(`(?i)[\"']?slash[_-]?developer[_-]?space[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "slash: "+match)
-			case regexp.MustCompile(`(?i)[\"']?slash[_-]?developer[_-]?space[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "slash: "+match)
-			case regexp.MustCompile(`(?i)[\"']?signing[_-]?key[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "signing: "+match)
-			case regexp.MustCompile(`(?i)[\"']?signing[_-]?key[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "signing: "+match)
-			case regexp.MustCompile(`(?i)[\"']?signing[_-]?key[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "signing: "+match)
-			case regexp.MustCompile(`(?i)[\"']?signing[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "signing: "+match)
-			case regexp.MustCompile(`(?i)[\"']?setsecretkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "setsecretkey: "+match)
-			case regexp.MustCompile(`(?i)[\"']?setdstsecretkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "setdstsecretkey: "+match)
-			case regexp.MustCompile(`(?i)[\"']?setdstaccesskey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "setdstaccesskey: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ses[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ses: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ses[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ses: "+match)
-			case regexp.MustCompile(`(?i)[\"']?service[_-]?account[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "service: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sentry[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sentry: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sentry[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sentry: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sentry[_-]?endpoint[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sentry: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sentry[_-]?default[_-]?org[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sentry: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sentry[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sentry: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sendwithus[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sendwithus: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sendgrid[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sendgrid: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sendgrid[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sendgrid: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sendgrid[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sendgrid: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sendgrid[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sendgrid: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sendgrid[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sendgrid: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sendgrid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sendgrid: "+match)
-			case regexp.MustCompile(`(?i)[\"']?selion[_-]?selenium[_-]?host[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "selion: "+match)
-			case regexp.MustCompile(`(?i)[\"']?selion[_-]?log[_-]?level[_-]?dev[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "selion: "+match)
-			case regexp.MustCompile(`(?i)[\"']?segment[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "segment: "+match)
-			case regexp.MustCompile(`(?i)[\"']?secretkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "secretkey: "+match)
-			case regexp.MustCompile(`(?i)[\"']?secretaccesskey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "secretaccesskey: "+match)
-			case regexp.MustCompile(`(?i)[\"']?secret[_-]?key[_-]?base[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "secret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?secret[_-]?9[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "secret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?secret[_-]?8[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "secret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?secret[_-]?7[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "secret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?secret[_-]?6[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "secret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?secret[_-]?5[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "secret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?secret[_-]?4[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "secret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?secret[_-]?3[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "secret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?secret[_-]?2[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "secret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?secret[_-]?11[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "secret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?secret[_-]?10[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "secret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?secret[_-]?1[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "secret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?secret[_-]?0[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "secret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sdr[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sdr: "+match)
-			case regexp.MustCompile(`(?i)[\"']?scrutinizer[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "scrutinizer: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sauce[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sauce: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sandbox[_-]?aws[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sandbox: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sandbox[_-]?aws[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sandbox: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sandbox[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sandbox: "+match)
-			case regexp.MustCompile(`(?i)[\"']?salesforce[_-]?bulk[_-]?test[_-]?security[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "salesforce: "+match)
-			case regexp.MustCompile(`(?i)[\"']?salesforce[_-]?bulk[_-]?test[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "salesforce: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sacloud[_-]?api[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sacloud: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sacloud[_-]?access[_-]?token[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sacloud: "+match)
-			case regexp.MustCompile(`(?i)[\"']?sacloud[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "sacloud: "+match)
-			case regexp.MustCompile(`(?i)[\"']?s3[_-]?user[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "s3: "+match)
-			case regexp.MustCompile(`(?i)[\"']?s3[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "s3: "+match)
-			case regexp.MustCompile(`(?i)[\"']?s3[_-]?secret[_-]?assets[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "s3: "+match)
-			case regexp.MustCompile(`(?i)[\"']?s3[_-]?secret[_-]?app[_-]?logs[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "s3: "+match)
-			case regexp.MustCompile(`(?i)[\"']?s3[_-]?key[_-]?assets[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "s3: "+match)
-			case regexp.MustCompile(`(?i)[\"']?s3[_-]?key[_-]?app[_-]?logs[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "s3: "+match)
-			case regexp.MustCompile(`(?i)[\"']?s3[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "s3: "+match)
-			case regexp.MustCompile(`(?i)[\"']?s3[_-]?external[_-]?3[_-]?amazonaws[_-]?com[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "s3: "+match)
-			case regexp.MustCompile(`(?i)[\"']?s3[_-]?bucket[_-]?name[_-]?assets[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "s3: "+match)
-			case regexp.MustCompile(`(?i)[\"']?s3[_-]?bucket[_-]?name[_-]?app[_-]?logs[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "s3: "+match)
-			case regexp.MustCompile(`(?i)[\"']?s3[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "s3: "+match)
-			case regexp.MustCompile(`(?i)[\"']?s3[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "s3: "+match)
-			case regexp.MustCompile(`(?i)[\"']?rubygems[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "rubygems: "+match)
-			case regexp.MustCompile(`(?i)[\"']?rtd[_-]?store[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "rtd: "+match)
-			case regexp.MustCompile(`(?i)[\"']?rtd[_-]?key[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "rtd: "+match)
-			case regexp.MustCompile(`(?i)[\"']?route53[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "route53: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ropsten[_-]?private[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ropsten: "+match)
-			case regexp.MustCompile(`(?i)[\"']?rinkeby[_-]?private[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "rinkeby: "+match)
-			case regexp.MustCompile(`(?i)[\"']?rest[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "rest: "+match)
-			case regexp.MustCompile(`(?i)[\"']?repotoken[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "repotoken: "+match)
-			case regexp.MustCompile(`(?i)[\"']?reporting[_-]?webdav[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "reporting: "+match)
-			case regexp.MustCompile(`(?i)[\"']?reporting[_-]?webdav[_-]?pwd[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "reporting: "+match)
-			case regexp.MustCompile(`(?i)[\"']?release[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "release: "+match)
-			case regexp.MustCompile(`(?i)[\"']?release[_-]?gh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "release: "+match)
-			case regexp.MustCompile(`(?i)[\"']?registry[_-]?secure[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "registry: "+match)
-			case regexp.MustCompile(`(?i)[\"']?registry[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "registry: "+match)
-			case regexp.MustCompile(`(?i)[\"']?refresh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "refresh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?rediscloud[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "rediscloud: "+match)
-			case regexp.MustCompile(`(?i)[\"']?redis[_-]?stunnel[_-]?urls[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "redis: "+match)
-			case regexp.MustCompile(`(?i)[\"']?randrmusicapiaccesstoken[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "randrmusicapiaccesstoken: "+match)
-			case regexp.MustCompile(`(?i)[\"']?rabbitmq[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "rabbitmq: "+match)
-			case regexp.MustCompile(`(?i)[\"']?quip[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "quip: "+match)
-			case regexp.MustCompile(`(?i)[\"']?qiita[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "qiita: "+match)
-			case regexp.MustCompile(`(?i)[\"']?pypi[_-]?passowrd[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "pypi: "+match)
-			case regexp.MustCompile(`(?i)[\"']?pushover[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "pushover: "+match)
-			case regexp.MustCompile(`(?i)[\"']?publish[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "publish: "+match)
-			case regexp.MustCompile(`(?i)[\"']?publish[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "publish: "+match)
-			case regexp.MustCompile(`(?i)[\"']?publish[_-]?access[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "publish: "+match)
-			case regexp.MustCompile(`(?i)[\"']?project[_-]?config[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "project: "+match)
-			case regexp.MustCompile(`(?i)[\"']?prod[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "prod: "+match)
-			case regexp.MustCompile(`(?i)[\"']?prod[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "prod: "+match)
-			case regexp.MustCompile(`(?i)[\"']?prod[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "prod: "+match)
-			case regexp.MustCompile(`(?i)[\"']?private[_-]?signing[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "private: "+match)
-			case regexp.MustCompile(`(?i)[\"']?pring[_-]?mail[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "pring: "+match)
-			case regexp.MustCompile(`(?i)[\"']?preferred[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "preferred: "+match)
-			case regexp.MustCompile(`(?i)[\"']?prebuild[_-]?auth[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "prebuild: "+match)
-			case regexp.MustCompile(`(?i)[\"']?postgresql[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "postgresql: "+match)
-			case regexp.MustCompile(`(?i)[\"']?postgresql[_-]?db[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "postgresql: "+match)
-			case regexp.MustCompile(`(?i)[\"']?postgres[_-]?env[_-]?postgres[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "postgres: "+match)
-			case regexp.MustCompile(`(?i)[\"']?postgres[_-]?env[_-]?postgres[_-]?db[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "postgres: "+match)
-			case regexp.MustCompile(`(?i)[\"']?plugin[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "plugin: "+match)
-			case regexp.MustCompile(`(?i)[\"']?plotly[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "plotly: "+match)
-			case regexp.MustCompile(`(?i)[\"']?places[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "places: "+match)
-			case regexp.MustCompile(`(?i)[\"']?places[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "places: "+match)
-			case regexp.MustCompile(`(?i)[\"']?pg[_-]?host[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "pg: "+match)
-			case regexp.MustCompile(`(?i)[\"']?pg[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "pg: "+match)
-			case regexp.MustCompile(`(?i)[\"']?personal[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "personal: "+match)
-			case regexp.MustCompile(`(?i)[\"']?personal[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "personal: "+match)
-			case regexp.MustCompile(`(?i)[\"']?percy[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "percy: "+match)
-			case regexp.MustCompile(`(?i)[\"']?percy[_-]?project[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "percy: "+match)
-			case regexp.MustCompile(`(?i)[\"']?paypal[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "paypal: "+match)
-			case regexp.MustCompile(`(?i)[\"']?passwordtravis[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "passwordtravis: "+match)
-			case regexp.MustCompile(`(?i)[\"']?parse[_-]?js[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "parse: "+match)
-			case regexp.MustCompile(`(?i)[\"']?pagerduty[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "pagerduty: "+match)
-			case regexp.MustCompile(`(?i)[\"']?packagecloud[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "packagecloud: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ossrh[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ossrh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ossrh[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ossrh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ossrh[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ossrh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ossrh[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ossrh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ossrh[_-]?jira[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ossrh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?os[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "os: "+match)
-			case regexp.MustCompile(`(?i)[\"']?os[_-]?auth[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "os: "+match)
-			case regexp.MustCompile(`(?i)[\"']?org[_-]?project[_-]?gradle[_-]?sonatype[_-]?nexus[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "org: "+match)
-			case regexp.MustCompile(`(?i)[\"']?org[_-]?gradle[_-]?project[_-]?sonatype[_-]?nexus[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "org: "+match)
-			case regexp.MustCompile(`(?i)[\"']?openwhisk[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "openwhisk: "+match)
-			case regexp.MustCompile(`(?i)[\"']?open[_-]?whisk[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "open: "+match)
-			case regexp.MustCompile(`(?i)[\"']?onesignal[_-]?user[_-]?auth[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "onesignal: "+match)
-			case regexp.MustCompile(`(?i)[\"']?onesignal[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "onesignal: "+match)
-			case regexp.MustCompile(`(?i)[\"']?omise[_-]?skey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "omise: "+match)
-			case regexp.MustCompile(`(?i)[\"']?omise[_-]?pubkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "omise: "+match)
-			case regexp.MustCompile(`(?i)[\"']?omise[_-]?pkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "omise: "+match)
-			case regexp.MustCompile(`(?i)[\"']?omise[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "omise: "+match)
-			case regexp.MustCompile(`(?i)[\"']?okta[_-]?oauth2[_-]?clientsecret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "okta: "+match)
-			case regexp.MustCompile(`(?i)[\"']?okta[_-]?oauth2[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "okta: "+match)
-			case regexp.MustCompile(`(?i)[\"']?okta[_-]?client[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "okta: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ofta[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ofta: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ofta[_-]?region[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ofta: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ofta[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ofta: "+match)
-			case regexp.MustCompile(`(?i)[\"']?octest[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "octest: "+match)
-			case regexp.MustCompile(`(?i)[\"']?octest[_-]?app[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "octest: "+match)
-			case regexp.MustCompile(`(?i)[\"']?octest[_-]?app[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "octest: "+match)
-			case regexp.MustCompile(`(?i)[\"']?oc[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "oc: "+match)
-			case regexp.MustCompile(`(?i)[\"']?object[_-]?store[_-]?creds[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "object: "+match)
-			case regexp.MustCompile(`(?i)[\"']?object[_-]?store[_-]?bucket[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "object: "+match)
-			case regexp.MustCompile(`(?i)[\"']?object[_-]?storage[_-]?region[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "object: "+match)
-			case regexp.MustCompile(`(?i)[\"']?object[_-]?storage[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "object: "+match)
-			case regexp.MustCompile(`(?i)[\"']?oauth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "oauth: "+match)
-			case regexp.MustCompile(`(?i)[\"']?numbers[_-]?service[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "numbers: "+match)
-			case regexp.MustCompile(`(?i)[\"']?nuget[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "nuget: "+match)
-			case regexp.MustCompile(`(?i)[\"']?nuget[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "nuget: "+match)
-			case regexp.MustCompile(`(?i)[\"']?nuget[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "nuget: "+match)
-			case regexp.MustCompile(`(?i)[\"']?npm[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "npm: "+match)
-			case regexp.MustCompile(`(?i)[\"']?npm[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "npm: "+match)
-			case regexp.MustCompile(`(?i)[\"']?npm[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "npm: "+match)
-			case regexp.MustCompile(`(?i)[\"']?npm[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "npm: "+match)
-			case regexp.MustCompile(`(?i)[\"']?npm[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "npm: "+match)
-			case regexp.MustCompile(`(?i)[\"']?npm[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "npm: "+match)
-			case regexp.MustCompile(`(?i)[\"']?npm[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "npm: "+match)
-			case regexp.MustCompile(`(?i)[\"']?now[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "now: "+match)
-			case regexp.MustCompile(`(?i)[\"']?non[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "non: "+match)
-			case regexp.MustCompile(`(?i)[\"']?node[_-]?pre[_-]?gyp[_-]?secretaccesskey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "node: "+match)
-			case regexp.MustCompile(`(?i)[\"']?node[_-]?pre[_-]?gyp[_-]?github[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "node: "+match)
-			case regexp.MustCompile(`(?i)[\"']?node[_-]?pre[_-]?gyp[_-]?accesskeyid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "node: "+match)
-			case regexp.MustCompile(`(?i)[\"']?node[_-]?env[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "node: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ngrok[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ngrok: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ngrok[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ngrok: "+match)
-			case regexp.MustCompile(`(?i)[\"']?nexuspassword[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "nexuspassword: "+match)
-			case regexp.MustCompile(`(?i)[\"']?nexus[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "nexus: "+match)
-			case regexp.MustCompile(`(?i)[\"']?new[_-]?relic[_-]?beta[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "new: "+match)
-			case regexp.MustCompile(`(?i)[\"']?netlify[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "netlify: "+match)
-			case regexp.MustCompile(`(?i)[\"']?nativeevents[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "nativeevents: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mysqlsecret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mysqlsecret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mysqlmasteruser[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mysqlmasteruser: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mysql[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mysql: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mysql[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mysql: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mysql[_-]?root[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mysql: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mysql[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mysql: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mysql[_-]?hostname[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mysql: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mysql[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mysql: "+match)
-			case regexp.MustCompile(`(?i)[\"']?my[_-]?secret[_-]?env[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "my: "+match)
-			case regexp.MustCompile(`(?i)[\"']?multi[_-]?workspace[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "multi: "+match)
-			case regexp.MustCompile(`(?i)[\"']?multi[_-]?workflow[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "multi: "+match)
-			case regexp.MustCompile(`(?i)[\"']?multi[_-]?disconnect[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "multi: "+match)
-			case regexp.MustCompile(`(?i)[\"']?multi[_-]?connect[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "multi: "+match)
-			case regexp.MustCompile(`(?i)[\"']?multi[_-]?bob[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "multi: "+match)
-			case regexp.MustCompile(`(?i)[\"']?minio[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "minio: "+match)
-			case regexp.MustCompile(`(?i)[\"']?minio[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "minio: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mile[_-]?zero[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mile: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mh[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mh[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mg[_-]?public[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mg: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mg[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mg: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mapboxaccesstoken[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mapboxaccesstoken: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mapbox[_-]?aws[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mapbox: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mapbox[_-]?aws[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mapbox: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mapbox[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mapbox: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mapbox[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mapbox: "+match)
-			case regexp.MustCompile(`(?i)[\"']?manifest[_-]?app[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "manifest: "+match)
-			case regexp.MustCompile(`(?i)[\"']?manifest[_-]?app[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "manifest: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mandrill[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mandrill: "+match)
-			case regexp.MustCompile(`(?i)[\"']?managementapiaccesstoken[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "managementapiaccesstoken: "+match)
-			case regexp.MustCompile(`(?i)[\"']?management[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "management: "+match)
-			case regexp.MustCompile(`(?i)[\"']?manage[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "manage: "+match)
-			case regexp.MustCompile(`(?i)[\"']?manage[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "manage: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mailgun[_-]?secret[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mailgun: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mailgun[_-]?pub[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mailgun: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mailgun[_-]?pub[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mailgun: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mailgun[_-]?priv[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mailgun: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mailgun[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mailgun: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mailgun[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mailgun: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mailgun[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mailgun: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mailer[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mailer: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mailchimp[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mailchimp: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mailchimp[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mailchimp: "+match)
-			case regexp.MustCompile(`(?i)[\"']?mail[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "mail: "+match)
-			case regexp.MustCompile(`(?i)[\"']?magento[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "magento: "+match)
-			case regexp.MustCompile(`(?i)[\"']?magento[_-]?auth[_-]?username [\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "magento: "+match)
-			case regexp.MustCompile(`(?i)[\"']?magento[_-]?auth[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "magento: "+match)
-			case regexp.MustCompile(`(?i)[\"']?lottie[_-]?upload[_-]?cert[_-]?key[_-]?store[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "lottie: "+match)
-			case regexp.MustCompile(`(?i)[\"']?lottie[_-]?upload[_-]?cert[_-]?key[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "lottie: "+match)
-			case regexp.MustCompile(`(?i)[\"']?lottie[_-]?s3[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "lottie: "+match)
-			case regexp.MustCompile(`(?i)[\"']?lottie[_-]?happo[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "lottie: "+match)
-			case regexp.MustCompile(`(?i)[\"']?lottie[_-]?happo[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "lottie: "+match)
-			case regexp.MustCompile(`(?i)[\"']?looker[_-]?test[_-]?runner[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "looker: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ll[_-]?shared[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ll: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ll[_-]?publish[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ll: "+match)
-			case regexp.MustCompile(`(?i)[\"']?linux[_-]?signing[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "linux: "+match)
-			case regexp.MustCompile(`(?i)[\"']?linkedin[_-]?client[_-]?secretor lottie[_-]?s3[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "linkedin: "+match)
-			case regexp.MustCompile(`(?i)[\"']?lighthouse[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "lighthouse: "+match)
-			case regexp.MustCompile(`(?i)[\"']?lektor[_-]?deploy[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "lektor: "+match)
-			case regexp.MustCompile(`(?i)[\"']?lektor[_-]?deploy[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "lektor: "+match)
-			case regexp.MustCompile(`(?i)[\"']?leanplum[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "leanplum: "+match)
-			case regexp.MustCompile(`(?i)[\"']?kxoltsn3vogdop92m[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "kxoltsn3vogdop92m: "+match)
-			case regexp.MustCompile(`(?i)[\"']?kubeconfig[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "kubeconfig: "+match)
-			case regexp.MustCompile(`(?i)[\"']?kubecfg[_-]?s3[_-]?path[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "kubecfg: "+match)
-			case regexp.MustCompile(`(?i)[\"']?kovan[_-]?private[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "kovan: "+match)
-			case regexp.MustCompile(`(?i)[\"']?keystore[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "keystore: "+match)
-			case regexp.MustCompile(`(?i)[\"']?kafka[_-]?rest[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "kafka: "+match)
-			case regexp.MustCompile(`(?i)[\"']?kafka[_-]?instance[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "kafka: "+match)
-			case regexp.MustCompile(`(?i)[\"']?kafka[_-]?admin[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "kafka: "+match)
-			case regexp.MustCompile(`(?i)[\"']?jwt[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "jwt: "+match)
-			case regexp.MustCompile(`(?i)[\"']?jdbc:mysql[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "jdbc: "+match)
-			case regexp.MustCompile(`(?i)[\"']?jdbc[_-]?host[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "jdbc: "+match)
-			case regexp.MustCompile(`(?i)[\"']?jdbc[_-]?databaseurl[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "jdbc: "+match)
-			case regexp.MustCompile(`(?i)[\"']?itest[_-]?gh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "itest: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ios[_-]?docs[_-]?deploy[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ios: "+match)
-			case regexp.MustCompile(`(?i)[\"']?internal[_-]?secrets[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "internal: "+match)
-			case regexp.MustCompile(`(?i)[\"']?integration[_-]?test[_-]?appid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "integration: "+match)
-			case regexp.MustCompile(`(?i)[\"']?integration[_-]?test[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "integration: "+match)
-			case regexp.MustCompile(`(?i)[\"']?index[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "index: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ij[_-]?repo[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ij: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ij[_-]?repo[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ij: "+match)
-			case regexp.MustCompile(`(?i)[\"']?hub[_-]?dxia2[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "hub: "+match)
-			case regexp.MustCompile(`(?i)[\"']?homebrew[_-]?github[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "homebrew: "+match)
-			case regexp.MustCompile(`(?i)[\"']?hockeyapp[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "hockeyapp: "+match)
-			case regexp.MustCompile(`(?i)[\"']?heroku[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "heroku: "+match)
-			case regexp.MustCompile(`(?i)[\"']?heroku[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "heroku: "+match)
-			case regexp.MustCompile(`(?i)[\"']?heroku[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "heroku: "+match)
-			case regexp.MustCompile(`(?i)[\"']?hb[_-]?codesign[_-]?key[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "hb: "+match)
-			case regexp.MustCompile(`(?i)[\"']?hb[_-]?codesign[_-]?gpg[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "hb: "+match)
-			case regexp.MustCompile(`(?i)[\"']?hab[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "hab: "+match)
-			case regexp.MustCompile(`(?i)[\"']?hab[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "hab: "+match)
-			case regexp.MustCompile(`(?i)[\"']?grgit[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "grgit: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gren[_-]?github[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gren: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gradle[_-]?signing[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gradle: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gradle[_-]?signing[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gradle: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gradle[_-]?publish[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gradle: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gradle[_-]?publish[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gradle: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gpg[_-]?secret[_-]?keys[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gpg: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gpg[_-]?private[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gpg: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gpg[_-]?passphrase[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gpg: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gpg[_-]?ownertrust[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gpg: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gpg[_-]?keyname[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gpg: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gpg[_-]?key[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gpg: "+match)
-			case regexp.MustCompile(`(?i)[\"']?google[_-]?private[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "google: "+match)
-			case regexp.MustCompile(`(?i)[\"']?google[_-]?maps[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "google: "+match)
-			case regexp.MustCompile(`(?i)[\"']?google[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "google: "+match)
-			case regexp.MustCompile(`(?i)[\"']?google[_-]?client[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "google: "+match)
-			case regexp.MustCompile(`(?i)[\"']?google[_-]?client[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "google: "+match)
-			case regexp.MustCompile(`(?i)[\"']?google[_-]?account[_-]?type[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "google: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gogs[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gogs: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gitlab[_-]?user[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gitlab: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?tokens[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?repo[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?release[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?pwd[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?oauth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?oauth[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?hunter[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?hunter[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?deployment[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?deploy[_-]?hb[_-]?doc[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?auth[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?github[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "github: "+match)
-			case regexp.MustCompile(`(?i)[\"']?git[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "git: "+match)
-			case regexp.MustCompile(`(?i)[\"']?git[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "git: "+match)
-			case regexp.MustCompile(`(?i)[\"']?git[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "git: "+match)
-			case regexp.MustCompile(`(?i)[\"']?git[_-]?committer[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "git: "+match)
-			case regexp.MustCompile(`(?i)[\"']?git[_-]?committer[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "git: "+match)
-			case regexp.MustCompile(`(?i)[\"']?git[_-]?author[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "git: "+match)
-			case regexp.MustCompile(`(?i)[\"']?git[_-]?author[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "git: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ghost[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ghost: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ghb[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ghb: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gh[_-]?unstable[_-]?oauth[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gh[_-]?repo[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gh[_-]?oauth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gh[_-]?oauth[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gh[_-]?next[_-]?unstable[_-]?oauth[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gh[_-]?next[_-]?unstable[_-]?oauth[_-]?client[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gh[_-]?next[_-]?oauth[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gh[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gh[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gh: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gcs[_-]?bucket[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gcs: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gcr[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gcr: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gcloud[_-]?service[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gcloud: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gcloud[_-]?project[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gcloud: "+match)
-			case regexp.MustCompile(`(?i)[\"']?gcloud[_-]?bucket[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "gcloud: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ftp[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ftp: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ftp[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ftp: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ftp[_-]?pw[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ftp: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ftp[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ftp: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ftp[_-]?login[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ftp: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ftp[_-]?host[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ftp: "+match)
-			case regexp.MustCompile(`(?i)[\"']?fossa[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "fossa: "+match)
-			case regexp.MustCompile(`(?i)[\"']?flickr[_-]?api[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "flickr: "+match)
-			case regexp.MustCompile(`(?i)[\"']?flickr[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "flickr: "+match)
-			case regexp.MustCompile(`(?i)[\"']?flask[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "flask: "+match)
-			case regexp.MustCompile(`(?i)[\"']?firefox[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "firefox: "+match)
-			case regexp.MustCompile(`(?i)[\"']?firebase[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "firebase: "+match)
-			case regexp.MustCompile(`(?i)[\"']?firebase[_-]?project[_-]?develop[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "firebase: "+match)
-			case regexp.MustCompile(`(?i)[\"']?firebase[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "firebase: "+match)
-			case regexp.MustCompile(`(?i)[\"']?firebase[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "firebase: "+match)
-			case regexp.MustCompile(`(?i)[\"']?firebase[_-]?api[_-]?json[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "firebase: "+match)
-			case regexp.MustCompile(`(?i)[\"']?file[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "file: "+match)
-			case regexp.MustCompile(`(?i)[\"']?exp[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "exp: "+match)
-			case regexp.MustCompile(`(?i)[\"']?eureka[_-]?awssecretkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "eureka: "+match)
-			case regexp.MustCompile(`(?i)[\"']?env[_-]?sonatype[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "env: "+match)
-			case regexp.MustCompile(`(?i)[\"']?env[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "env: "+match)
-			case regexp.MustCompile(`(?i)[\"']?env[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "env: "+match)
-			case regexp.MustCompile(`(?i)[\"']?env[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "env: "+match)
-			case regexp.MustCompile(`(?i)[\"']?env[_-]?heroku[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "env: "+match)
-			case regexp.MustCompile(`(?i)[\"']?env[_-]?github[_-]?oauth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "env: "+match)
-			case regexp.MustCompile(`(?i)[\"']?end[_-]?user[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "end: "+match)
-			case regexp.MustCompile(`(?i)[\"']?encryption[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "encryption: "+match)
-			case regexp.MustCompile(`(?i)[\"']?elasticsearch[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "elasticsearch: "+match)
-			case regexp.MustCompile(`(?i)[\"']?elastic[_-]?cloud[_-]?auth[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "elastic: "+match)
-			case regexp.MustCompile(`(?i)[\"']?dsonar[_-]?projectkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "dsonar: "+match)
-			case regexp.MustCompile(`(?i)[\"']?dsonar[_-]?login[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "dsonar: "+match)
-			case regexp.MustCompile(`(?i)[\"']?droplet[_-]?travis[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "droplet: "+match)
-			case regexp.MustCompile(`(?i)[\"']?dropbox[_-]?oauth[_-]?bearer[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "dropbox: "+match)
-			case regexp.MustCompile(`(?i)[\"']?doordash[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "doordash: "+match)
-			case regexp.MustCompile(`(?i)[\"']?dockerhubpassword[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "dockerhubpassword: "+match)
-			case regexp.MustCompile(`(?i)[\"']?dockerhub[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "dockerhub: "+match)
-			case regexp.MustCompile(`(?i)[\"']?docker[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "docker: "+match)
-			case regexp.MustCompile(`(?i)[\"']?docker[_-]?postgres[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "docker: "+match)
-			case regexp.MustCompile(`(?i)[\"']?docker[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "docker: "+match)
-			case regexp.MustCompile(`(?i)[\"']?docker[_-]?passwd[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "docker: "+match)
-			case regexp.MustCompile(`(?i)[\"']?docker[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "docker: "+match)
-			case regexp.MustCompile(`(?i)[\"']?docker[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "docker: "+match)
-			case regexp.MustCompile(`(?i)[\"']?docker[_-]?hub[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "docker: "+match)
-			case regexp.MustCompile(`(?i)[\"']?digitalocean[_-]?ssh[_-]?key[_-]?ids[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "digitalocean: "+match)
-			case regexp.MustCompile(`(?i)[\"']?digitalocean[_-]?ssh[_-]?key[_-]?body[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "digitalocean: "+match)
-			case regexp.MustCompile(`(?i)[\"']?digitalocean[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "digitalocean: "+match)
-			case regexp.MustCompile(`(?i)[\"']?dgpg[_-]?passphrase[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "dgpg: "+match)
-			case regexp.MustCompile(`(?i)[\"']?deploy[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "deploy: "+match)
-			case regexp.MustCompile(`(?i)[\"']?deploy[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "deploy: "+match)
-			case regexp.MustCompile(`(?i)[\"']?deploy[_-]?secure[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "deploy: "+match)
-			case regexp.MustCompile(`(?i)[\"']?deploy[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "deploy: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ddgc[_-]?github[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ddgc: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ddg[_-]?test[_-]?email[_-]?pw[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ddg: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ddg[_-]?test[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ddg: "+match)
-			case regexp.MustCompile(`(?i)[\"']?db[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "db: "+match)
-			case regexp.MustCompile(`(?i)[\"']?db[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "db: "+match)
-			case regexp.MustCompile(`(?i)[\"']?db[_-]?pw[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "db: "+match)
-			case regexp.MustCompile(`(?i)[\"']?db[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "db: "+match)
-			case regexp.MustCompile(`(?i)[\"']?db[_-]?host[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "db: "+match)
-			case regexp.MustCompile(`(?i)[\"']?db[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "db: "+match)
-			case regexp.MustCompile(`(?i)[\"']?db[_-]?connection[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "db: "+match)
-			case regexp.MustCompile(`(?i)[\"']?datadog[_-]?app[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "datadog: "+match)
-			case regexp.MustCompile(`(?i)[\"']?datadog[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "datadog: "+match)
-			case regexp.MustCompile(`(?i)[\"']?database[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "database: "+match)
-			case regexp.MustCompile(`(?i)[\"']?database[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "database: "+match)
-			case regexp.MustCompile(`(?i)[\"']?database[_-]?port[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "database: "+match)
-			case regexp.MustCompile(`(?i)[\"']?database[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "database: "+match)
-			case regexp.MustCompile(`(?i)[\"']?database[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "database: "+match)
-			case regexp.MustCompile(`(?i)[\"']?database[_-]?host[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "database: "+match)
-			case regexp.MustCompile(`(?i)[\"']?danger[_-]?github[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "danger: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cypress[_-]?record[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cypress: "+match)
-			case regexp.MustCompile(`(?i)[\"']?coverity[_-]?scan[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "coverity: "+match)
-			case regexp.MustCompile(`(?i)[\"']?coveralls[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "coveralls: "+match)
-			case regexp.MustCompile(`(?i)[\"']?coveralls[_-]?repo[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "coveralls: "+match)
-			case regexp.MustCompile(`(?i)[\"']?coveralls[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "coveralls: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cos[_-]?secrets[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cos: "+match)
-			case regexp.MustCompile(`(?i)[\"']?conversation[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "conversation: "+match)
-			case regexp.MustCompile(`(?i)[\"']?conversation[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "conversation: "+match)
-			case regexp.MustCompile(`(?i)[\"']?contentful[_-]?v2[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "contentful: "+match)
-			case regexp.MustCompile(`(?i)[\"']?contentful[_-]?test[_-]?org[_-]?cma[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "contentful: "+match)
-			case regexp.MustCompile(`(?i)[\"']?contentful[_-]?php[_-]?management[_-]?test[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "contentful: "+match)
-			case regexp.MustCompile(`(?i)[\"']?contentful[_-]?management[_-]?api[_-]?access[_-]?token[_-]?new[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "contentful: "+match)
-			case regexp.MustCompile(`(?i)[\"']?contentful[_-]?management[_-]?api[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "contentful: "+match)
-			case regexp.MustCompile(`(?i)[\"']?contentful[_-]?integration[_-]?management[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "contentful: "+match)
-			case regexp.MustCompile(`(?i)[\"']?contentful[_-]?cma[_-]?test[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "contentful: "+match)
-			case regexp.MustCompile(`(?i)[\"']?contentful[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "contentful: "+match)
-			case regexp.MustCompile(`(?i)[\"']?consumerkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "consumerkey: "+match)
-			case regexp.MustCompile(`(?i)[\"']?consumer[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "consumer: "+match)
-			case regexp.MustCompile(`(?i)[\"']?conekta[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "conekta: "+match)
-			case regexp.MustCompile(`(?i)[\"']?coding[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "coding: "+match)
-			case regexp.MustCompile(`(?i)[\"']?codecov[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "codecov: "+match)
-			case regexp.MustCompile(`(?i)[\"']?codeclimate[_-]?repo[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "codeclimate: "+match)
-			case regexp.MustCompile(`(?i)[\"']?codacy[_-]?project[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "codacy: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cocoapods[_-]?trunk[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cocoapods: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cocoapods[_-]?trunk[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cocoapods: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cn[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cn: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cn[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cn: "+match)
-			case regexp.MustCompile(`(?i)[\"']?clu[_-]?ssh[_-]?private[_-]?key[_-]?base64[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "clu: "+match)
-			case regexp.MustCompile(`(?i)[\"']?clu[_-]?repo[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "clu: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloudinary[_-]?url[_-]?staging[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloudinary: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloudinary[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloudinary: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloudflare[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloudflare: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloudflare[_-]?auth[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloudflare: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloudflare[_-]?auth[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloudflare: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloudflare[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloudflare: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?service[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloudant: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?processed[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloudant: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloudant: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?parsed[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloudant: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?order[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloudant: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?instance[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloudant: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloudant: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?audited[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloudant: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?archived[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloudant: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cloud[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cloud: "+match)
-			case regexp.MustCompile(`(?i)[\"']?clojars[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "clojars: "+match)
-			case regexp.MustCompile(`(?i)[\"']?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "client: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cli[_-]?e2e[_-]?cma[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cli: "+match)
-			case regexp.MustCompile(`(?i)[\"']?claimr[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "claimr: "+match)
-			case regexp.MustCompile(`(?i)[\"']?claimr[_-]?superuser[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "claimr: "+match)
-			case regexp.MustCompile(`(?i)[\"']?claimr[_-]?db[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "claimr: "+match)
-			case regexp.MustCompile(`(?i)[\"']?claimr[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "claimr: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ci[_-]?user[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ci: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ci[_-]?server[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ci: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ci[_-]?registry[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ci: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ci[_-]?project[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ci: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ci[_-]?deploy[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ci: "+match)
-			case regexp.MustCompile(`(?i)[\"']?chrome[_-]?refresh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "chrome: "+match)
-			case regexp.MustCompile(`(?i)[\"']?chrome[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "chrome: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cheverny[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cheverny: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cf[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cf: "+match)
-			case regexp.MustCompile(`(?i)[\"']?certificate[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "certificate: "+match)
-			case regexp.MustCompile(`(?i)[\"']?censys[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "censys: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cattle[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cattle: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cattle[_-]?agent[_-]?instance[_-]?auth[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cattle: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cattle[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cattle: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cargo[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cargo: "+match)
-			case regexp.MustCompile(`(?i)[\"']?cache[_-]?s3[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "cache: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bx[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bx: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bx[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bx: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bundlesize[_-]?github[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bundlesize: "+match)
-			case regexp.MustCompile(`(?i)[\"']?built[_-]?branch[_-]?deploy[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "built: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bucketeer[_-]?aws[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bucketeer: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bucketeer[_-]?aws[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bucketeer: "+match)
-			case regexp.MustCompile(`(?i)[\"']?browserstack[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "browserstack: "+match)
-			case regexp.MustCompile(`(?i)[\"']?browser[_-]?stack[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "browser: "+match)
-			case regexp.MustCompile(`(?i)[\"']?brackets[_-]?repo[_-]?oauth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "brackets: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bluemix[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bluemix: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bluemix[_-]?pwd[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bluemix: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bluemix[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bluemix: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bluemix[_-]?pass[_-]?prod[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bluemix: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bluemix[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bluemix: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bluemix[_-]?auth[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bluemix: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bluemix[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bluemix: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bintraykey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bintraykey: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bintray[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bintray: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bintray[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bintray: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bintray[_-]?gpg[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bintray: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bintray[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bintray: "+match)
-			case regexp.MustCompile(`(?i)[\"']?bintray[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "bintray: "+match)
-			case regexp.MustCompile(`(?i)[\"']?b2[_-]?bucket[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "b2: "+match)
-			case regexp.MustCompile(`(?i)[\"']?b2[_-]?app[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "b2: "+match)
-			case regexp.MustCompile(`(?i)[\"']?awssecretkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "awssecretkey: "+match)
-			case regexp.MustCompile(`(?i)[\"']?awscn[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "awscn: "+match)
-			case regexp.MustCompile(`(?i)[\"']?awscn[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "awscn: "+match)
-			case regexp.MustCompile(`(?i)[\"']?awsaccesskeyid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "awsaccesskeyid: "+match)
-			case regexp.MustCompile(`(?i)[\"']?aws[_-]?ses[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "aws: "+match)
-			case regexp.MustCompile(`(?i)[\"']?aws[_-]?ses[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "aws: "+match)
-			case regexp.MustCompile(`(?i)[\"']?aws[_-]?secrets[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "aws: "+match)
-			case regexp.MustCompile(`(?i)[\"']?aws[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "aws: "+match)
-			case regexp.MustCompile(`(?i)[\"']?aws[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "aws: "+match)
-			case regexp.MustCompile(`(?i)[\"']?aws[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "aws: "+match)
-			case regexp.MustCompile(`(?i)[\"']?aws[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "aws: "+match)
-			case regexp.MustCompile(`(?i)[\"']?aws[_-]?config[_-]?secretaccesskey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "aws: "+match)
-			case regexp.MustCompile(`(?i)[\"']?aws[_-]?config[_-]?accesskeyid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "aws: "+match)
-			case regexp.MustCompile(`(?i)[\"']?aws[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "aws: "+match)
-			case regexp.MustCompile(`(?i)[\"']?aws[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "aws: "+match)
-			case regexp.MustCompile(`(?i)[\"']?aws[_-]?access[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "aws: "+match)
-			case regexp.MustCompile(`(?i)[\"']?author[_-]?npm[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "author: "+match)
-			case regexp.MustCompile(`(?i)[\"']?author[_-]?email[_-]?addr[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "author: "+match)
-			case regexp.MustCompile(`(?i)[\"']?auth0[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "auth0: "+match)
-			case regexp.MustCompile(`(?i)[\"']?auth0[_-]?api[_-]?clientsecret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "auth0: "+match)
-			case regexp.MustCompile(`(?i)[\"']?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "auth: "+match)
-			case regexp.MustCompile(`(?i)[\"']?assistant[_-]?iam[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "assistant: "+match)
-			case regexp.MustCompile(`(?i)[\"']?artifacts[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "artifacts: "+match)
-			case regexp.MustCompile(`(?i)[\"']?artifacts[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "artifacts: "+match)
-			case regexp.MustCompile(`(?i)[\"']?artifacts[_-]?bucket[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "artifacts: "+match)
-			case regexp.MustCompile(`(?i)[\"']?artifacts[_-]?aws[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "artifacts: "+match)
-			case regexp.MustCompile(`(?i)[\"']?artifacts[_-]?aws[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "artifacts: "+match)
-			case regexp.MustCompile(`(?i)[\"']?artifactory[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "artifactory: "+match)
-			case regexp.MustCompile(`(?i)[\"']?argos[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "argos: "+match)
-			case regexp.MustCompile(`(?i)[\"']?apple[_-]?id[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "apple: "+match)
-			case regexp.MustCompile(`(?i)[\"']?appclientsecret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "appclientsecret: "+match)
-			case regexp.MustCompile(`(?i)[\"']?app[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "app: "+match)
-			case regexp.MustCompile(`(?i)[\"']?app[_-]?secrete[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "app: "+match)
-			case regexp.MustCompile(`(?i)[\"']?app[_-]?report[_-]?token[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "app: "+match)
-			case regexp.MustCompile(`(?i)[\"']?app[_-]?bucket[_-]?perm[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "app: "+match)
-			case regexp.MustCompile(`(?i)[\"']?apigw[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "apigw: "+match)
-			case regexp.MustCompile(`(?i)[\"']?apiary[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "apiary: "+match)
-			case regexp.MustCompile(`(?i)[\"']?api[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "api: "+match)
-			case regexp.MustCompile(`(?i)[\"']?api[_-]?key[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "api: "+match)
-			case regexp.MustCompile(`(?i)[\"']?api[_-]?key[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "api: "+match)
-			case regexp.MustCompile(`(?i)[\"']?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "api: "+match)
-			case regexp.MustCompile(`(?i)[\"']?aos[_-]?sec[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "aos: "+match)
-			case regexp.MustCompile(`(?i)[\"']?aos[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "aos: "+match)
-			case regexp.MustCompile(`(?i)[\"']?ansible[_-]?vault[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "ansible: "+match)
-			case regexp.MustCompile(`(?i)[\"']?android[_-]?docs[_-]?deploy[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "android: "+match)
-			case regexp.MustCompile(`(?i)[\"']?anaconda[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "anaconda: "+match)
-			case regexp.MustCompile(`(?i)[\"']?amazon[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "amazon: "+match)
-			case regexp.MustCompile(`(?i)[\"']?amazon[_-]?bucket[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "amazon: "+match)
-			case regexp.MustCompile(`(?i)[\"']?alicloud[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "alicloud: "+match)
-			case regexp.MustCompile(`(?i)[\"']?alicloud[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "alicloud: "+match)
-			case regexp.MustCompile(`(?i)[\"']?alias[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "alias: "+match)
-			case regexp.MustCompile(`(?i)[\"']?algolia[_-]?search[_-]?key[_-]?1[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "algolia: "+match)
-			case regexp.MustCompile(`(?i)[\"']?algolia[_-]?search[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "algolia: "+match)
-			case regexp.MustCompile(`(?i)[\"']?algolia[_-]?search[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "algolia: "+match)
-			case regexp.MustCompile(`(?i)[\"']?algolia[_-]?api[_-]?key[_-]?search[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "algolia: "+match)
-			case regexp.MustCompile(`(?i)[\"']?algolia[_-]?api[_-]?key[_-]?mcm[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "algolia: "+match)
-			case regexp.MustCompile(`(?i)[\"']?algolia[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "algolia: "+match)
-			case regexp.MustCompile(`(?i)[\"']?algolia[_-]?admin[_-]?key[_-]?mcm[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "algolia: "+match)
-			case regexp.MustCompile(`(?i)[\"']?algolia[_-]?admin[_-]?key[_-]?2[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "algolia: "+match)
-			case regexp.MustCompile(`(?i)[\"']?algolia[_-]?admin[_-]?key[_-]?1[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "algolia: "+match)
-			case regexp.MustCompile(`(?i)[\"']?air[-_]?table[-_]?api[-_]?key[\"']?[=:][\"']?.+[\"']`).MatchString(match):
-				secretsFound = append(secretsFound, "air: "+match)
-			case regexp.MustCompile(`(?i)[\"']?adzerk[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "adzerk: "+match)
-			case regexp.MustCompile(`(?i)[\"']?admin[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "admin: "+match)
-			case regexp.MustCompile(`(?i)[\"']?account[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "account: "+match)
-			case regexp.MustCompile(`(?i)[\"']?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "access: "+match)
-			case regexp.MustCompile(`(?i)[\"']?access[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "access: "+match)
-			case regexp.MustCompile(`(?i)[\"']?access[_-]?key[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
-				secretsFound = append(secretsFound, "access: "+match)
-			}
+			formatted := categorizeSecret(match)
+			secretsFound = append(secretsFound, formatted)
 		}
 	}
 
 	return secretsFound
+}
+
+func categorizeSecret(match string) string {
+	switch {
+	case regexp.MustCompile(`Bearer`).MatchString(match):
+		return "authorization custom:  " + match
+	case regexp.MustCompile(`AIza`).MatchString(match):
+		return "Google Maps API:  " + match
+	case regexp.MustCompile(`xoxb`).MatchString(match):
+		return "Slack:  " + match
+	case regexp.MustCompile(`[0-9a-f]{32}-us`).MatchString(match):
+		return "Algolia:  " + match
+	case regexp.MustCompile(`(?i)Bearer\s*eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+`).MatchString(match):
+		return "Authorization:  " + match
+	case regexp.MustCompile(`(?i)[\"']?local[_-]?storage[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "Local Storage Key:  " + match
+	case regexp.MustCompile(`(?i)[\"']?local[_-]?storage[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "Local Storage Secret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secret[_-]?sso[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "SSO Secret:  " + match
+	case regexp.MustCompile(`Bearer\s+([a-fA-F0-9]+)`).MatchString(match):
+		return "Authorization:  " + match
+	case regexp.MustCompile(`-----BEGIN PRIVATE KEY-----[a-zA-Z0-9\\S]{100`).MatchString(match):
+		return "private_key:  " + match
+	case regexp.MustCompile(`-----BEGIN RSA PRIVATE KEY-----[a-zA-Z0-9\\S]{100`).MatchString(match):
+		return "rsa_private_key:  " + match
+	case regexp.MustCompile(`(?i)[\"']?zopim[_-]?account[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "zopim:  " + match
+	case regexp.MustCompile(`(?i)[\"']?zhuliang[_-]?gh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "zhuliang:  " + match
+	case regexp.MustCompile(`(?i)[\"']?zensonatypepassword[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "zensonatypepassword:  " + match
+	case regexp.MustCompile(`(?i)zendesk(_api_token|_key|_token|-travis-github|_url|_username)(\\s|=)`).MatchString(match):
+		return "zendesk:  " + match
+	case regexp.MustCompile(`(?i)[\"']?yt[_-]?server[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "yt:  " + match
+	case regexp.MustCompile(`(?i)[\"']?yt[_-]?partner[_-]?refresh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "yt:  " + match
+	case regexp.MustCompile(`(?i)[\"']?yt[_-]?partner[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "yt:  " + match
+	case regexp.MustCompile(`(?i)[\"']?yt[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "yt:  " + match
+	case regexp.MustCompile(`(?i)[\"']?yt[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "yt:  " + match
+	case regexp.MustCompile(`(?i)[\"']?yt[_-]?account[_-]?refresh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "yt:  " + match
+	case regexp.MustCompile(`(?i)[\"']?yt[_-]?account[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "yt:  " + match
+	case regexp.MustCompile(`(?i)[\"']?yangshun[_-]?gh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "yangshun:  " + match
+	case regexp.MustCompile(`(?i)[\"']?yangshun[_-]?gh[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "yangshun:  " + match
+	case regexp.MustCompile(`(?i)[\"']?www[_-]?googleapis[_-]?com[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "www:  " + match
+	case regexp.MustCompile(`(?i)[\"']?wpt[_-]?ssh[_-]?private[_-]?key[_-]?base64[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "wpt:  " + match
+	case regexp.MustCompile(`(?i)[\"']?wpt[_-]?ssh[_-]?connect[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "wpt:  " + match
+	case regexp.MustCompile(`(?i)[\"']?wpt[_-]?report[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "wpt:  " + match
+	case regexp.MustCompile(`(?i)[\"']?wpt[_-]?prepare[_-]?dir[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "wpt:  " + match
+	case regexp.MustCompile(`(?i)[\"']?wpt[_-]?db[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "wpt:  " + match
+	case regexp.MustCompile(`(?i)[\"']?wpt[_-]?db[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "wpt:  " + match
+	case regexp.MustCompile(`(?i)[\"']?wporg[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "wporg:  " + match
+	case regexp.MustCompile(`(?i)[\"']?wpjm[_-]?phpunit[_-]?google[_-]?geocode[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "wpjm:  " + match
+	case regexp.MustCompile(`(?i)[\"']?wordpress[_-]?db[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "wordpress:  " + match
+	case regexp.MustCompile(`(?i)[\"']?wordpress[_-]?db[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "wordpress:  " + match
+	case regexp.MustCompile(`(?i)[\"']?wincert[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "wincert:  " + match
+	case regexp.MustCompile(`(?i)[\"']?widget[_-]?test[_-]?server[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "widget:  " + match
+	case regexp.MustCompile(`(?i)[\"']?widget[_-]?fb[_-]?password[_-]?3[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "widget:  " + match
+	case regexp.MustCompile(`(?i)[\"']?widget[_-]?fb[_-]?password[_-]?2[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "widget:  " + match
+	case regexp.MustCompile(`(?i)[\"']?widget[_-]?fb[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "widget:  " + match
+	case regexp.MustCompile(`(?i)[\"']?widget[_-]?basic[_-]?password[_-]?5[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "widget:  " + match
+	case regexp.MustCompile(`(?i)[\"']?widget[_-]?basic[_-]?password[_-]?4[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "widget:  " + match
+	case regexp.MustCompile(`(?i)[\"']?widget[_-]?basic[_-]?password[_-]?3[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "widget:  " + match
+	case regexp.MustCompile(`(?i)[\"']?widget[_-]?basic[_-]?password[_-]?2[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "widget:  " + match
+	case regexp.MustCompile(`(?i)[\"']?widget[_-]?basic[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "widget:  " + match
+	case regexp.MustCompile(`(?i)[\"']?watson[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "watson:  " + match
+	case regexp.MustCompile(`(?i)[\"']?watson[_-]?device[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "watson:  " + match
+	case regexp.MustCompile(`(?i)[\"']?watson[_-]?conversation[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "watson:  " + match
+	case regexp.MustCompile(`(?i)[\"']?wakatime[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "wakatime:  " + match
+	case regexp.MustCompile(`(?i)[\"']?vscetoken[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "vscetoken:  " + match
+	case regexp.MustCompile(`(?i)[\"']?visual[_-]?recognition[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "visual:  " + match
+	case regexp.MustCompile(`(?i)[\"']?virustotal[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "virustotal:  " + match
+	case regexp.MustCompile(`(?i)[\"']?vip[_-]?github[_-]?deploy[_-]?key[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "vip:  " + match
+	case regexp.MustCompile(`(?i)[\"']?vip[_-]?github[_-]?deploy[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "vip:  " + match
+	case regexp.MustCompile(`(?i)[\"']?vip[_-]?github[_-]?build[_-]?repo[_-]?deploy[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "vip:  " + match
+	case regexp.MustCompile(`(?i)[\"']?v[_-]?sfdc[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "v:  " + match
+	case regexp.MustCompile(`(?i)[\"']?v[_-]?sfdc[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "v:  " + match
+	case regexp.MustCompile(`(?i)[\"']?usertravis[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "usertravis:  " + match
+	case regexp.MustCompile(`(?i)[\"']?user[_-]?assets[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "user:  " + match
+	case regexp.MustCompile(`(?i)[\"']?user[_-]?assets[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "user:  " + match
+	case regexp.MustCompile(`(?i)[\"']?use[_-]?ssh[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "use:  " + match
+	case regexp.MustCompile(`(?i)[\"']?us[_-]?east[_-]?1[_-]?elb[_-]?amazonaws[_-]?com[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "us:  " + match
+	case regexp.MustCompile(`(?i)[\"']?urban[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "urban:  " + match
+	case regexp.MustCompile(`(?i)[\"']?urban[_-]?master[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "urban:  " + match
+	case regexp.MustCompile(`(?i)[\"']?urban[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "urban:  " + match
+	case regexp.MustCompile(`(?i)[\"']?unity[_-]?serial[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "unity:  " + match
+	case regexp.MustCompile(`(?i)[\"']?unity[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "unity:  " + match
+	case regexp.MustCompile(`(?i)[\"']?twitteroauthaccesstoken[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "twitteroauthaccesstoken:  " + match
+	case regexp.MustCompile(`(?i)[\"']?twitteroauthaccesssecret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "twitteroauthaccesssecret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?twitter[_-]?consumer[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "twitter:  " + match
+	case regexp.MustCompile(`(?i)[\"']?twitter[_-]?consumer[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "twitter:  " + match
+	case regexp.MustCompile(`(?i)[\"']?twine[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "twine:  " + match
+	case regexp.MustCompile(`(?i)[\"']?twilio[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "twilio:  " + match
+	case regexp.MustCompile(`(?i)[\"']?twilio[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "twilio:  " + match
+	case regexp.MustCompile(`(?i)[\"']?twilio[_-]?configuration[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "twilio:  " + match
+	case regexp.MustCompile(`(?i)[\"']?twilio[_-]?chat[_-]?account[_-]?api[_-]?service[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "twilio:  " + match
+	case regexp.MustCompile(`(?i)[\"']?twilio[_-]?api[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "twilio:  " + match
+	case regexp.MustCompile(`(?i)[\"']?twilio[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "twilio:  " + match
+	case regexp.MustCompile(`(?i)[\"']?trex[_-]?okta[_-]?client[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "trex:  " + match
+	case regexp.MustCompile(`(?i)[\"']?trex[_-]?client[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "trex:  " + match
+	case regexp.MustCompile(`(?i)[\"']?travis[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "travis:  " + match
+	case regexp.MustCompile(`(?i)[\"']?travis[_-]?secure[_-]?env[_-]?vars[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "travis:  " + match
+	case regexp.MustCompile(`(?i)[\"']?travis[_-]?pull[_-]?request[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "travis:  " + match
+	case regexp.MustCompile(`(?i)[\"']?travis[_-]?gh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "travis:  " + match
+	case regexp.MustCompile(`(?i)[\"']?travis[_-]?e2e[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "travis:  " + match
+	case regexp.MustCompile(`(?i)[\"']?travis[_-]?com[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "travis:  " + match
+	case regexp.MustCompile(`(?i)[\"']?travis[_-]?branch[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "travis:  " + match
+	case regexp.MustCompile(`(?i)[\"']?travis[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "travis:  " + match
+	case regexp.MustCompile(`(?i)[\"']?travis[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "travis:  " + match
+	case regexp.MustCompile(`(?i)[\"']?token[_-]?core[_-]?java[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "token:  " + match
+	case regexp.MustCompile(`(?i)[\"']?thera[_-]?oss[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "thera:  " + match
+	case regexp.MustCompile(`(?i)[\"']?tester[_-]?keys[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "tester:  " + match
+	case regexp.MustCompile(`(?i)[\"']?test[_-]?test[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "test:  " + match
+	case regexp.MustCompile(`(?i)[\"']?test[_-]?github[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "test:  " + match
+	case regexp.MustCompile(`(?i)[\"']?tesco[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "tesco:  " + match
+	case regexp.MustCompile(`(?i)[\"']?svn[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "svn:  " + match
+	case regexp.MustCompile(`(?i)[\"']?surge[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "surge:  " + match
+	case regexp.MustCompile(`(?i)[\"']?surge[_-]?login[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "surge:  " + match
+	case regexp.MustCompile(`(?i)[\"']?stripe[_-]?public[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "stripe:  " + match
+	case regexp.MustCompile(`(?i)[\"']?stripe[_-]?private[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "stripe:  " + match
+	case regexp.MustCompile(`(?i)[\"']?strip[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "strip:  " + match
+	case regexp.MustCompile(`(?i)[\"']?strip[_-]?publishable[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "strip:  " + match
+	case regexp.MustCompile(`(?i)[\"']?stormpath[_-]?api[_-]?key[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "stormpath:  " + match
+	case regexp.MustCompile(`(?i)[\"']?stormpath[_-]?api[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "stormpath:  " + match
+	case regexp.MustCompile(`(?i)[\"']?starship[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "starship:  " + match
+	case regexp.MustCompile(`(?i)[\"']?starship[_-]?account[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "starship:  " + match
+	case regexp.MustCompile(`(?i)[\"']?star[_-]?test[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "star:  " + match
+	case regexp.MustCompile(`(?i)[\"']?star[_-]?test[_-]?location[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "star:  " + match
+	case regexp.MustCompile(`(?i)[\"']?star[_-]?test[_-]?bucket[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "star:  " + match
+	case regexp.MustCompile(`(?i)[\"']?star[_-]?test[_-]?aws[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "star:  " + match
+	case regexp.MustCompile(`(?i)[\"']?staging[_-]?base[_-]?url[_-]?runscope[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "staging:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ssmtp[_-]?config[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ssmtp:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sshpass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sshpass:  " + match
+	case regexp.MustCompile(`(?i)[\"']?srcclr[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "srcclr:  " + match
+	case regexp.MustCompile(`(?i)[\"']?square[_-]?reader[_-]?sdk[_-]?repository[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "square:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sqssecretkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sqssecretkey:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sqsaccesskey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sqsaccesskey:  " + match
+	case regexp.MustCompile(`(?i)[\"']?spring[_-]?mail[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "spring:  " + match
+	case regexp.MustCompile(`(?i)[\"']?spotify[_-]?api[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "spotify:  " + match
+	case regexp.MustCompile(`(?i)[\"']?spotify[_-]?api[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "spotify:  " + match
+	case regexp.MustCompile(`(?i)[\"']?spaces[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "spaces:  " + match
+	case regexp.MustCompile(`(?i)[\"']?spaces[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "spaces:  " + match
+	case regexp.MustCompile(`(?i)[\"']?soundcloud[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "soundcloud:  " + match
+	case regexp.MustCompile(`(?i)[\"']?soundcloud[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "soundcloud:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sonatypepassword[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sonatypepassword:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sonatype[_-]?token[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sonatype:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sonatype[_-]?token[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sonatype:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sonatype[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sonatype:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sonatype[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sonatype:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sonatype[_-]?nexus[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sonatype:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sonatype[_-]?gpg[_-]?passphrase[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sonatype:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sonatype[_-]?gpg[_-]?key[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sonatype:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sonar[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sonar:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sonar[_-]?project[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sonar:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sonar[_-]?organization[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sonar:  " + match
+	case regexp.MustCompile(`(?i)[\"']?socrata[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "socrata:  " + match
+	case regexp.MustCompile(`(?i)[\"']?socrata[_-]?app[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "socrata:  " + match
+	case regexp.MustCompile(`(?i)[\"']?snyk[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "snyk:  " + match
+	case regexp.MustCompile(`(?i)[\"']?snyk[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "snyk:  " + match
+	case regexp.MustCompile(`(?i)[\"']?snoowrap[_-]?refresh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "snoowrap:  " + match
+	case regexp.MustCompile(`(?i)[\"']?snoowrap[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "snoowrap:  " + match
+	case regexp.MustCompile(`(?i)[\"']?snoowrap[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "snoowrap:  " + match
+	case regexp.MustCompile(`(?i)[\"']?slate[_-]?user[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "slate:  " + match
+	case regexp.MustCompile(`(?i)[\"']?slash[_-]?developer[_-]?space[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "slash:  " + match
+	case regexp.MustCompile(`(?i)[\"']?slash[_-]?developer[_-]?space[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "slash:  " + match
+	case regexp.MustCompile(`(?i)[\"']?signing[_-]?key[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "signing:  " + match
+	case regexp.MustCompile(`(?i)[\"']?signing[_-]?key[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "signing:  " + match
+	case regexp.MustCompile(`(?i)[\"']?signing[_-]?key[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "signing:  " + match
+	case regexp.MustCompile(`(?i)[\"']?signing[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "signing:  " + match
+	case regexp.MustCompile(`(?i)[\"']?setsecretkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "setsecretkey:  " + match
+	case regexp.MustCompile(`(?i)[\"']?setdstsecretkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "setdstsecretkey:  " + match
+	case regexp.MustCompile(`(?i)[\"']?setdstaccesskey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "setdstaccesskey:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ses[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ses:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ses[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ses:  " + match
+	case regexp.MustCompile(`(?i)[\"']?service[_-]?account[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "service:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sentry[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sentry:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sentry[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sentry:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sentry[_-]?endpoint[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sentry:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sentry[_-]?default[_-]?org[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sentry:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sentry[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sentry:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sendwithus[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sendwithus:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sendgrid[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sendgrid:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sendgrid[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sendgrid:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sendgrid[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sendgrid:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sendgrid[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sendgrid:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sendgrid[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sendgrid:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sendgrid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sendgrid:  " + match
+	case regexp.MustCompile(`(?i)[\"']?selion[_-]?selenium[_-]?host[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "selion:  " + match
+	case regexp.MustCompile(`(?i)[\"']?selion[_-]?log[_-]?level[_-]?dev[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "selion:  " + match
+	case regexp.MustCompile(`(?i)[\"']?segment[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "segment:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secretkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "secretkey:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secretaccesskey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "secretaccesskey:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secret[_-]?key[_-]?base[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "secret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secret[_-]?9[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "secret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secret[_-]?8[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "secret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secret[_-]?7[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "secret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secret[_-]?6[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "secret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secret[_-]?5[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "secret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secret[_-]?4[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "secret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secret[_-]?3[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "secret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secret[_-]?2[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "secret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secret[_-]?11[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "secret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secret[_-]?10[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "secret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secret[_-]?1[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "secret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?secret[_-]?0[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "secret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sdr[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sdr:  " + match
+	case regexp.MustCompile(`(?i)[\"']?scrutinizer[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "scrutinizer:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sauce[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sauce:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sandbox[_-]?aws[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sandbox:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sandbox[_-]?aws[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sandbox:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sandbox[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sandbox:  " + match
+	case regexp.MustCompile(`(?i)[\"']?salesforce[_-]?bulk[_-]?test[_-]?security[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "salesforce:  " + match
+	case regexp.MustCompile(`(?i)[\"']?salesforce[_-]?bulk[_-]?test[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "salesforce:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sacloud[_-]?api[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sacloud:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sacloud[_-]?access[_-]?token[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sacloud:  " + match
+	case regexp.MustCompile(`(?i)[\"']?sacloud[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "sacloud:  " + match
+	case regexp.MustCompile(`(?i)[\"']?s3[_-]?user[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "s3:  " + match
+	case regexp.MustCompile(`(?i)[\"']?s3[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "s3:  " + match
+	case regexp.MustCompile(`(?i)[\"']?s3[_-]?secret[_-]?assets[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "s3:  " + match
+	case regexp.MustCompile(`(?i)[\"']?s3[_-]?secret[_-]?app[_-]?logs[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "s3:  " + match
+	case regexp.MustCompile(`(?i)[\"']?s3[_-]?key[_-]?assets[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "s3:  " + match
+	case regexp.MustCompile(`(?i)[\"']?s3[_-]?key[_-]?app[_-]?logs[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "s3:  " + match
+	case regexp.MustCompile(`(?i)[\"']?s3[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "s3:  " + match
+	case regexp.MustCompile(`(?i)[\"']?s3[_-]?external[_-]?3[_-]?amazonaws[_-]?com[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "s3:  " + match
+	case regexp.MustCompile(`(?i)[\"']?s3[_-]?bucket[_-]?name[_-]?assets[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "s3:  " + match
+	case regexp.MustCompile(`(?i)[\"']?s3[_-]?bucket[_-]?name[_-]?app[_-]?logs[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "s3:  " + match
+	case regexp.MustCompile(`(?i)[\"']?s3[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "s3:  " + match
+	case regexp.MustCompile(`(?i)[\"']?s3[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "s3:  " + match
+	case regexp.MustCompile(`(?i)[\"']?rubygems[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "rubygems:  " + match
+	case regexp.MustCompile(`(?i)[\"']?rtd[_-]?store[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "rtd:  " + match
+	case regexp.MustCompile(`(?i)[\"']?rtd[_-]?key[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "rtd:  " + match
+	case regexp.MustCompile(`(?i)[\"']?route53[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "route53:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ropsten[_-]?private[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ropsten:  " + match
+	case regexp.MustCompile(`(?i)[\"']?rinkeby[_-]?private[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "rinkeby:  " + match
+	case regexp.MustCompile(`(?i)[\"']?rest[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "rest:  " + match
+	case regexp.MustCompile(`(?i)[\"']?repotoken[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "repotoken:  " + match
+	case regexp.MustCompile(`(?i)[\"']?reporting[_-]?webdav[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "reporting:  " + match
+	case regexp.MustCompile(`(?i)[\"']?reporting[_-]?webdav[_-]?pwd[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "reporting:  " + match
+	case regexp.MustCompile(`(?i)[\"']?release[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "release:  " + match
+	case regexp.MustCompile(`(?i)[\"']?release[_-]?gh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "release:  " + match
+	case regexp.MustCompile(`(?i)[\"']?registry[_-]?secure[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "registry:  " + match
+	case regexp.MustCompile(`(?i)[\"']?registry[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "registry:  " + match
+	case regexp.MustCompile(`(?i)[\"']?refresh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "refresh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?rediscloud[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "rediscloud:  " + match
+	case regexp.MustCompile(`(?i)[\"']?redis[_-]?stunnel[_-]?urls[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "redis:  " + match
+	case regexp.MustCompile(`(?i)[\"']?randrmusicapiaccesstoken[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "randrmusicapiaccesstoken:  " + match
+	case regexp.MustCompile(`(?i)[\"']?rabbitmq[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "rabbitmq:  " + match
+	case regexp.MustCompile(`(?i)[\"']?quip[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "quip:  " + match
+	case regexp.MustCompile(`(?i)[\"']?qiita[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "qiita:  " + match
+	case regexp.MustCompile(`(?i)[\"']?pypi[_-]?passowrd[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "pypi:  " + match
+	case regexp.MustCompile(`(?i)[\"']?pushover[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "pushover:  " + match
+	case regexp.MustCompile(`(?i)[\"']?publish[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "publish:  " + match
+	case regexp.MustCompile(`(?i)[\"']?publish[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "publish:  " + match
+	case regexp.MustCompile(`(?i)[\"']?publish[_-]?access[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "publish:  " + match
+	case regexp.MustCompile(`(?i)[\"']?project[_-]?config[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "project:  " + match
+	case regexp.MustCompile(`(?i)[\"']?prod[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "prod:  " + match
+	case regexp.MustCompile(`(?i)[\"']?prod[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "prod:  " + match
+	case regexp.MustCompile(`(?i)[\"']?prod[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "prod:  " + match
+	case regexp.MustCompile(`(?i)[\"']?private[_-]?signing[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "private:  " + match
+	case regexp.MustCompile(`(?i)[\"']?pring[_-]?mail[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "pring:  " + match
+	case regexp.MustCompile(`(?i)[\"']?preferred[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "preferred:  " + match
+	case regexp.MustCompile(`(?i)[\"']?prebuild[_-]?auth[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "prebuild:  " + match
+	case regexp.MustCompile(`(?i)[\"']?postgresql[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "postgresql:  " + match
+	case regexp.MustCompile(`(?i)[\"']?postgresql[_-]?db[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "postgresql:  " + match
+	case regexp.MustCompile(`(?i)[\"']?postgres[_-]?env[_-]?postgres[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "postgres:  " + match
+	case regexp.MustCompile(`(?i)[\"']?postgres[_-]?env[_-]?postgres[_-]?db[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "postgres:  " + match
+	case regexp.MustCompile(`(?i)[\"']?plugin[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "plugin:  " + match
+	case regexp.MustCompile(`(?i)[\"']?plotly[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "plotly:  " + match
+	case regexp.MustCompile(`(?i)[\"']?places[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "places:  " + match
+	case regexp.MustCompile(`(?i)[\"']?places[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "places:  " + match
+	case regexp.MustCompile(`(?i)[\"']?pg[_-]?host[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "pg:  " + match
+	case regexp.MustCompile(`(?i)[\"']?pg[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "pg:  " + match
+	case regexp.MustCompile(`(?i)[\"']?personal[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "personal:  " + match
+	case regexp.MustCompile(`(?i)[\"']?personal[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "personal:  " + match
+	case regexp.MustCompile(`(?i)[\"']?percy[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "percy:  " + match
+	case regexp.MustCompile(`(?i)[\"']?percy[_-]?project[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "percy:  " + match
+	case regexp.MustCompile(`(?i)[\"']?paypal[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "paypal:  " + match
+	case regexp.MustCompile(`(?i)[\"']?passwordtravis[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "passwordtravis:  " + match
+	case regexp.MustCompile(`(?i)[\"']?parse[_-]?js[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "parse:  " + match
+	case regexp.MustCompile(`(?i)[\"']?pagerduty[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "pagerduty:  " + match
+	case regexp.MustCompile(`(?i)[\"']?packagecloud[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "packagecloud:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ossrh[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ossrh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ossrh[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ossrh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ossrh[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ossrh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ossrh[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ossrh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ossrh[_-]?jira[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ossrh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?os[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "os:  " + match
+	case regexp.MustCompile(`(?i)[\"']?os[_-]?auth[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "os:  " + match
+	case regexp.MustCompile(`(?i)[\"']?org[_-]?project[_-]?gradle[_-]?sonatype[_-]?nexus[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "org:  " + match
+	case regexp.MustCompile(`(?i)[\"']?org[_-]?gradle[_-]?project[_-]?sonatype[_-]?nexus[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "org:  " + match
+	case regexp.MustCompile(`(?i)[\"']?openwhisk[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "openwhisk:  " + match
+	case regexp.MustCompile(`(?i)[\"']?open[_-]?whisk[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "open:  " + match
+	case regexp.MustCompile(`(?i)[\"']?onesignal[_-]?user[_-]?auth[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "onesignal:  " + match
+	case regexp.MustCompile(`(?i)[\"']?onesignal[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "onesignal:  " + match
+	case regexp.MustCompile(`(?i)[\"']?omise[_-]?skey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "omise:  " + match
+	case regexp.MustCompile(`(?i)[\"']?omise[_-]?pubkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "omise:  " + match
+	case regexp.MustCompile(`(?i)[\"']?omise[_-]?pkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "omise:  " + match
+	case regexp.MustCompile(`(?i)[\"']?omise[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "omise:  " + match
+	case regexp.MustCompile(`(?i)[\"']?okta[_-]?oauth2[_-]?clientsecret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "okta:  " + match
+	case regexp.MustCompile(`(?i)[\"']?okta[_-]?oauth2[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "okta:  " + match
+	case regexp.MustCompile(`(?i)[\"']?okta[_-]?client[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "okta:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ofta[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ofta:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ofta[_-]?region[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ofta:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ofta[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ofta:  " + match
+	case regexp.MustCompile(`(?i)[\"']?octest[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "octest:  " + match
+	case regexp.MustCompile(`(?i)[\"']?octest[_-]?app[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "octest:  " + match
+	case regexp.MustCompile(`(?i)[\"']?octest[_-]?app[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "octest:  " + match
+	case regexp.MustCompile(`(?i)[\"']?oc[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "oc:  " + match
+	case regexp.MustCompile(`(?i)[\"']?object[_-]?store[_-]?creds[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "object:  " + match
+	case regexp.MustCompile(`(?i)[\"']?object[_-]?store[_-]?bucket[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "object:  " + match
+	case regexp.MustCompile(`(?i)[\"']?object[_-]?storage[_-]?region[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "object:  " + match
+	case regexp.MustCompile(`(?i)[\"']?object[_-]?storage[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "object:  " + match
+	case regexp.MustCompile(`(?i)[\"']?oauth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "oauth:  " + match
+	case regexp.MustCompile(`(?i)[\"']?numbers[_-]?service[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "numbers:  " + match
+	case regexp.MustCompile(`(?i)[\"']?nuget[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "nuget:  " + match
+	case regexp.MustCompile(`(?i)[\"']?nuget[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "nuget:  " + match
+	case regexp.MustCompile(`(?i)[\"']?nuget[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "nuget:  " + match
+	case regexp.MustCompile(`(?i)[\"']?npm[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "npm:  " + match
+	case regexp.MustCompile(`(?i)[\"']?npm[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "npm:  " + match
+	case regexp.MustCompile(`(?i)[\"']?npm[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "npm:  " + match
+	case regexp.MustCompile(`(?i)[\"']?npm[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "npm:  " + match
+	case regexp.MustCompile(`(?i)[\"']?npm[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "npm:  " + match
+	case regexp.MustCompile(`(?i)[\"']?npm[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "npm:  " + match
+	case regexp.MustCompile(`(?i)[\"']?npm[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "npm:  " + match
+	case regexp.MustCompile(`(?i)[\"']?now[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "now:  " + match
+	case regexp.MustCompile(`(?i)[\"']?non[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "non:  " + match
+	case regexp.MustCompile(`(?i)[\"']?node[_-]?pre[_-]?gyp[_-]?secretaccesskey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "node:  " + match
+	case regexp.MustCompile(`(?i)[\"']?node[_-]?pre[_-]?gyp[_-]?github[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "node:  " + match
+	case regexp.MustCompile(`(?i)[\"']?node[_-]?pre[_-]?gyp[_-]?accesskeyid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "node:  " + match
+	case regexp.MustCompile(`(?i)[\"']?node[_-]?env[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "node:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ngrok[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ngrok:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ngrok[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ngrok:  " + match
+	case regexp.MustCompile(`(?i)[\"']?nexuspassword[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "nexuspassword:  " + match
+	case regexp.MustCompile(`(?i)[\"']?nexus[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "nexus:  " + match
+	case regexp.MustCompile(`(?i)[\"']?new[_-]?relic[_-]?beta[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "new:  " + match
+	case regexp.MustCompile(`(?i)[\"']?netlify[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "netlify:  " + match
+	case regexp.MustCompile(`(?i)[\"']?nativeevents[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "nativeevents:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mysqlsecret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mysqlsecret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mysqlmasteruser[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mysqlmasteruser:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mysql[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mysql:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mysql[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mysql:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mysql[_-]?root[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mysql:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mysql[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mysql:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mysql[_-]?hostname[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mysql:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mysql[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mysql:  " + match
+	case regexp.MustCompile(`(?i)[\"']?my[_-]?secret[_-]?env[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "my:  " + match
+	case regexp.MustCompile(`(?i)[\"']?multi[_-]?workspace[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "multi:  " + match
+	case regexp.MustCompile(`(?i)[\"']?multi[_-]?workflow[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "multi:  " + match
+	case regexp.MustCompile(`(?i)[\"']?multi[_-]?disconnect[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "multi:  " + match
+	case regexp.MustCompile(`(?i)[\"']?multi[_-]?connect[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "multi:  " + match
+	case regexp.MustCompile(`(?i)[\"']?multi[_-]?bob[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "multi:  " + match
+	case regexp.MustCompile(`(?i)[\"']?minio[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "minio:  " + match
+	case regexp.MustCompile(`(?i)[\"']?minio[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "minio:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mile[_-]?zero[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mile:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mh[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mh[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mg[_-]?public[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mg:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mg[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mg:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mapboxaccesstoken[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mapboxaccesstoken:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mapbox[_-]?aws[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mapbox:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mapbox[_-]?aws[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mapbox:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mapbox[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mapbox:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mapbox[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mapbox:  " + match
+	case regexp.MustCompile(`(?i)[\"']?manifest[_-]?app[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "manifest:  " + match
+	case regexp.MustCompile(`(?i)[\"']?manifest[_-]?app[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "manifest:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mandrill[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mandrill:  " + match
+	case regexp.MustCompile(`(?i)[\"']?managementapiaccesstoken[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "managementapiaccesstoken:  " + match
+	case regexp.MustCompile(`(?i)[\"']?management[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "management:  " + match
+	case regexp.MustCompile(`(?i)[\"']?manage[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "manage:  " + match
+	case regexp.MustCompile(`(?i)[\"']?manage[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "manage:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mailgun[_-]?secret[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mailgun:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mailgun[_-]?pub[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mailgun:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mailgun[_-]?pub[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mailgun:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mailgun[_-]?priv[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mailgun:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mailgun[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mailgun:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mailgun[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mailgun:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mailgun[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mailgun:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mailer[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mailer:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mailchimp[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mailchimp:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mailchimp[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mailchimp:  " + match
+	case regexp.MustCompile(`(?i)[\"']?mail[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "mail:  " + match
+	case regexp.MustCompile(`(?i)[\"']?magento[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "magento:  " + match
+	case regexp.MustCompile(`(?i)[\"']?magento[_-]?auth[_-]?username [\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "magento:  " + match
+	case regexp.MustCompile(`(?i)[\"']?magento[_-]?auth[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "magento:  " + match
+	case regexp.MustCompile(`(?i)[\"']?lottie[_-]?upload[_-]?cert[_-]?key[_-]?store[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "lottie:  " + match
+	case regexp.MustCompile(`(?i)[\"']?lottie[_-]?upload[_-]?cert[_-]?key[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "lottie:  " + match
+	case regexp.MustCompile(`(?i)[\"']?lottie[_-]?s3[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "lottie:  " + match
+	case regexp.MustCompile(`(?i)[\"']?lottie[_-]?happo[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "lottie:  " + match
+	case regexp.MustCompile(`(?i)[\"']?lottie[_-]?happo[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "lottie:  " + match
+	case regexp.MustCompile(`(?i)[\"']?looker[_-]?test[_-]?runner[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "looker:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ll[_-]?shared[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ll:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ll[_-]?publish[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ll:  " + match
+	case regexp.MustCompile(`(?i)[\"']?linux[_-]?signing[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "linux:  " + match
+	case regexp.MustCompile(`(?i)[\"']?linkedin[_-]?client[_-]?secretor lottie[_-]?s3[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "linkedin:  " + match
+	case regexp.MustCompile(`(?i)[\"']?lighthouse[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "lighthouse:  " + match
+	case regexp.MustCompile(`(?i)[\"']?lektor[_-]?deploy[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "lektor:  " + match
+	case regexp.MustCompile(`(?i)[\"']?lektor[_-]?deploy[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "lektor:  " + match
+	case regexp.MustCompile(`(?i)[\"']?leanplum[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "leanplum:  " + match
+	case regexp.MustCompile(`(?i)[\"']?kxoltsn3vogdop92m[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "kxoltsn3vogdop92m:  " + match
+	case regexp.MustCompile(`(?i)[\"']?kubeconfig[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "kubeconfig:  " + match
+	case regexp.MustCompile(`(?i)[\"']?kubecfg[_-]?s3[_-]?path[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "kubecfg:  " + match
+	case regexp.MustCompile(`(?i)[\"']?kovan[_-]?private[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "kovan:  " + match
+	case regexp.MustCompile(`(?i)[\"']?keystore[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "keystore:  " + match
+	case regexp.MustCompile(`(?i)[\"']?kafka[_-]?rest[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "kafka:  " + match
+	case regexp.MustCompile(`(?i)[\"']?kafka[_-]?instance[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "kafka:  " + match
+	case regexp.MustCompile(`(?i)[\"']?kafka[_-]?admin[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "kafka:  " + match
+	case regexp.MustCompile(`(?i)[\"']?jwt[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "jwt:  " + match
+	case regexp.MustCompile(`(?i)[\"']?jdbc:mysql[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "jdbc:  " + match
+	case regexp.MustCompile(`(?i)[\"']?jdbc[_-]?host[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "jdbc:  " + match
+	case regexp.MustCompile(`(?i)[\"']?jdbc[_-]?databaseurl[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "jdbc:  " + match
+	case regexp.MustCompile(`(?i)[\"']?itest[_-]?gh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "itest:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ios[_-]?docs[_-]?deploy[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ios:  " + match
+	case regexp.MustCompile(`(?i)[\"']?internal[_-]?secrets[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "internal:  " + match
+	case regexp.MustCompile(`(?i)[\"']?integration[_-]?test[_-]?appid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "integration:  " + match
+	case regexp.MustCompile(`(?i)[\"']?integration[_-]?test[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "integration:  " + match
+	case regexp.MustCompile(`(?i)[\"']?index[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "index:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ij[_-]?repo[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ij:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ij[_-]?repo[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ij:  " + match
+	case regexp.MustCompile(`(?i)[\"']?hub[_-]?dxia2[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "hub:  " + match
+	case regexp.MustCompile(`(?i)[\"']?homebrew[_-]?github[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "homebrew:  " + match
+	case regexp.MustCompile(`(?i)[\"']?hockeyapp[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "hockeyapp:  " + match
+	case regexp.MustCompile(`(?i)[\"']?heroku[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "heroku:  " + match
+	case regexp.MustCompile(`(?i)[\"']?heroku[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "heroku:  " + match
+	case regexp.MustCompile(`(?i)[\"']?heroku[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "heroku:  " + match
+	case regexp.MustCompile(`(?i)[\"']?hb[_-]?codesign[_-]?key[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "hb:  " + match
+	case regexp.MustCompile(`(?i)[\"']?hb[_-]?codesign[_-]?gpg[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "hb:  " + match
+	case regexp.MustCompile(`(?i)[\"']?hab[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "hab:  " + match
+	case regexp.MustCompile(`(?i)[\"']?hab[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "hab:  " + match
+	case regexp.MustCompile(`(?i)[\"']?grgit[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "grgit:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gren[_-]?github[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gren:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gradle[_-]?signing[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gradle:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gradle[_-]?signing[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gradle:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gradle[_-]?publish[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gradle:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gradle[_-]?publish[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gradle:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gpg[_-]?secret[_-]?keys[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gpg:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gpg[_-]?private[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gpg:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gpg[_-]?passphrase[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gpg:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gpg[_-]?ownertrust[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gpg:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gpg[_-]?keyname[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gpg:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gpg[_-]?key[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gpg:  " + match
+	case regexp.MustCompile(`(?i)[\"']?google[_-]?private[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "google:  " + match
+	case regexp.MustCompile(`(?i)[\"']?google[_-]?maps[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "google:  " + match
+	case regexp.MustCompile(`(?i)[\"']?google[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "google:  " + match
+	case regexp.MustCompile(`(?i)[\"']?google[_-]?client[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "google:  " + match
+	case regexp.MustCompile(`(?i)[\"']?google[_-]?client[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "google:  " + match
+	case regexp.MustCompile(`(?i)[\"']?google[_-]?account[_-]?type[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "google:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gogs[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gogs:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gitlab[_-]?user[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gitlab:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?tokens[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?repo[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?release[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?pwd[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?oauth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?oauth[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?hunter[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?hunter[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?deployment[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?deploy[_-]?hb[_-]?doc[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?auth[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?github[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "github:  " + match
+	case regexp.MustCompile(`(?i)[\"']?git[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "git:  " + match
+	case regexp.MustCompile(`(?i)[\"']?git[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "git:  " + match
+	case regexp.MustCompile(`(?i)[\"']?git[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "git:  " + match
+	case regexp.MustCompile(`(?i)[\"']?git[_-]?committer[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "git:  " + match
+	case regexp.MustCompile(`(?i)[\"']?git[_-]?committer[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "git:  " + match
+	case regexp.MustCompile(`(?i)[\"']?git[_-]?author[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "git:  " + match
+	case regexp.MustCompile(`(?i)[\"']?git[_-]?author[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "git:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ghost[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ghost:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ghb[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ghb:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gh[_-]?unstable[_-]?oauth[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gh[_-]?repo[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gh[_-]?oauth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gh[_-]?oauth[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gh[_-]?next[_-]?unstable[_-]?oauth[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gh[_-]?next[_-]?unstable[_-]?oauth[_-]?client[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gh[_-]?next[_-]?oauth[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gh[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gh[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gh:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gcs[_-]?bucket[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gcs:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gcr[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gcr:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gcloud[_-]?service[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gcloud:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gcloud[_-]?project[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gcloud:  " + match
+	case regexp.MustCompile(`(?i)[\"']?gcloud[_-]?bucket[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "gcloud:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ftp[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ftp:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ftp[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ftp:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ftp[_-]?pw[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ftp:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ftp[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ftp:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ftp[_-]?login[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ftp:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ftp[_-]?host[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ftp:  " + match
+	case regexp.MustCompile(`(?i)[\"']?fossa[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "fossa:  " + match
+	case regexp.MustCompile(`(?i)[\"']?flickr[_-]?api[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "flickr:  " + match
+	case regexp.MustCompile(`(?i)[\"']?flickr[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "flickr:  " + match
+	case regexp.MustCompile(`(?i)[\"']?flask[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "flask:  " + match
+	case regexp.MustCompile(`(?i)[\"']?firefox[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "firefox:  " + match
+	case regexp.MustCompile(`(?i)[\"']?firebase[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "firebase:  " + match
+	case regexp.MustCompile(`(?i)[\"']?firebase[_-]?project[_-]?develop[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "firebase:  " + match
+	case regexp.MustCompile(`(?i)[\"']?firebase[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "firebase:  " + match
+	case regexp.MustCompile(`(?i)[\"']?firebase[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "firebase:  " + match
+	case regexp.MustCompile(`(?i)[\"']?firebase[_-]?api[_-]?json[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "firebase:  " + match
+	case regexp.MustCompile(`(?i)[\"']?file[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "file:  " + match
+	case regexp.MustCompile(`(?i)[\"']?exp[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "exp:  " + match
+	case regexp.MustCompile(`(?i)[\"']?eureka[_-]?awssecretkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "eureka:  " + match
+	case regexp.MustCompile(`(?i)[\"']?env[_-]?sonatype[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "env:  " + match
+	case regexp.MustCompile(`(?i)[\"']?env[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "env:  " + match
+	case regexp.MustCompile(`(?i)[\"']?env[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "env:  " + match
+	case regexp.MustCompile(`(?i)[\"']?env[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "env:  " + match
+	case regexp.MustCompile(`(?i)[\"']?env[_-]?heroku[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "env:  " + match
+	case regexp.MustCompile(`(?i)[\"']?env[_-]?github[_-]?oauth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "env:  " + match
+	case regexp.MustCompile(`(?i)[\"']?end[_-]?user[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "end:  " + match
+	case regexp.MustCompile(`(?i)[\"']?encryption[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "encryption:  " + match
+	case regexp.MustCompile(`(?i)[\"']?elasticsearch[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "elasticsearch:  " + match
+	case regexp.MustCompile(`(?i)[\"']?elastic[_-]?cloud[_-]?auth[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "elastic:  " + match
+	case regexp.MustCompile(`(?i)[\"']?dsonar[_-]?projectkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "dsonar:  " + match
+	case regexp.MustCompile(`(?i)[\"']?dsonar[_-]?login[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "dsonar:  " + match
+	case regexp.MustCompile(`(?i)[\"']?droplet[_-]?travis[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "droplet:  " + match
+	case regexp.MustCompile(`(?i)[\"']?dropbox[_-]?oauth[_-]?bearer[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "dropbox:  " + match
+	case regexp.MustCompile(`(?i)[\"']?doordash[_-]?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "doordash:  " + match
+	case regexp.MustCompile(`(?i)[\"']?dockerhubpassword[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "dockerhubpassword:  " + match
+	case regexp.MustCompile(`(?i)[\"']?dockerhub[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "dockerhub:  " + match
+	case regexp.MustCompile(`(?i)[\"']?docker[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "docker:  " + match
+	case regexp.MustCompile(`(?i)[\"']?docker[_-]?postgres[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "docker:  " + match
+	case regexp.MustCompile(`(?i)[\"']?docker[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "docker:  " + match
+	case regexp.MustCompile(`(?i)[\"']?docker[_-]?passwd[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "docker:  " + match
+	case regexp.MustCompile(`(?i)[\"']?docker[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "docker:  " + match
+	case regexp.MustCompile(`(?i)[\"']?docker[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "docker:  " + match
+	case regexp.MustCompile(`(?i)[\"']?docker[_-]?hub[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "docker:  " + match
+	case regexp.MustCompile(`(?i)[\"']?digitalocean[_-]?ssh[_-]?key[_-]?ids[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "digitalocean:  " + match
+	case regexp.MustCompile(`(?i)[\"']?digitalocean[_-]?ssh[_-]?key[_-]?body[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "digitalocean:  " + match
+	case regexp.MustCompile(`(?i)[\"']?digitalocean[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "digitalocean:  " + match
+	case regexp.MustCompile(`(?i)[\"']?dgpg[_-]?passphrase[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "dgpg:  " + match
+	case regexp.MustCompile(`(?i)[\"']?deploy[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "deploy:  " + match
+	case regexp.MustCompile(`(?i)[\"']?deploy[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "deploy:  " + match
+	case regexp.MustCompile(`(?i)[\"']?deploy[_-]?secure[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "deploy:  " + match
+	case regexp.MustCompile(`(?i)[\"']?deploy[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "deploy:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ddgc[_-]?github[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ddgc:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ddg[_-]?test[_-]?email[_-]?pw[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ddg:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ddg[_-]?test[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ddg:  " + match
+	case regexp.MustCompile(`(?i)[\"']?db[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "db:  " + match
+	case regexp.MustCompile(`(?i)[\"']?db[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "db:  " + match
+	case regexp.MustCompile(`(?i)[\"']?db[_-]?pw[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "db:  " + match
+	case regexp.MustCompile(`(?i)[\"']?db[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "db:  " + match
+	case regexp.MustCompile(`(?i)[\"']?db[_-]?host[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "db:  " + match
+	case regexp.MustCompile(`(?i)[\"']?db[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "db:  " + match
+	case regexp.MustCompile(`(?i)[\"']?db[_-]?connection[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "db:  " + match
+	case regexp.MustCompile(`(?i)[\"']?datadog[_-]?app[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "datadog:  " + match
+	case regexp.MustCompile(`(?i)[\"']?datadog[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "datadog:  " + match
+	case regexp.MustCompile(`(?i)[\"']?database[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "database:  " + match
+	case regexp.MustCompile(`(?i)[\"']?database[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "database:  " + match
+	case regexp.MustCompile(`(?i)[\"']?database[_-]?port[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "database:  " + match
+	case regexp.MustCompile(`(?i)[\"']?database[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "database:  " + match
+	case regexp.MustCompile(`(?i)[\"']?database[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "database:  " + match
+	case regexp.MustCompile(`(?i)[\"']?database[_-]?host[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "database:  " + match
+	case regexp.MustCompile(`(?i)[\"']?danger[_-]?github[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "danger:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cypress[_-]?record[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cypress:  " + match
+	case regexp.MustCompile(`(?i)[\"']?coverity[_-]?scan[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "coverity:  " + match
+	case regexp.MustCompile(`(?i)[\"']?coveralls[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "coveralls:  " + match
+	case regexp.MustCompile(`(?i)[\"']?coveralls[_-]?repo[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "coveralls:  " + match
+	case regexp.MustCompile(`(?i)[\"']?coveralls[_-]?api[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "coveralls:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cos[_-]?secrets[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cos:  " + match
+	case regexp.MustCompile(`(?i)[\"']?conversation[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "conversation:  " + match
+	case regexp.MustCompile(`(?i)[\"']?conversation[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "conversation:  " + match
+	case regexp.MustCompile(`(?i)[\"']?contentful[_-]?v2[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "contentful:  " + match
+	case regexp.MustCompile(`(?i)[\"']?contentful[_-]?test[_-]?org[_-]?cma[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "contentful:  " + match
+	case regexp.MustCompile(`(?i)[\"']?contentful[_-]?php[_-]?management[_-]?test[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "contentful:  " + match
+	case regexp.MustCompile(`(?i)[\"']?contentful[_-]?management[_-]?api[_-]?access[_-]?token[_-]?new[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "contentful:  " + match
+	case regexp.MustCompile(`(?i)[\"']?contentful[_-]?management[_-]?api[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "contentful:  " + match
+	case regexp.MustCompile(`(?i)[\"']?contentful[_-]?integration[_-]?management[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "contentful:  " + match
+	case regexp.MustCompile(`(?i)[\"']?contentful[_-]?cma[_-]?test[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "contentful:  " + match
+	case regexp.MustCompile(`(?i)[\"']?contentful[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "contentful:  " + match
+	case regexp.MustCompile(`(?i)[\"']?consumerkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "consumerkey:  " + match
+	case regexp.MustCompile(`(?i)[\"']?consumer[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "consumer:  " + match
+	case regexp.MustCompile(`(?i)[\"']?conekta[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "conekta:  " + match
+	case regexp.MustCompile(`(?i)[\"']?coding[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "coding:  " + match
+	case regexp.MustCompile(`(?i)[\"']?codecov[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "codecov:  " + match
+	case regexp.MustCompile(`(?i)[\"']?codeclimate[_-]?repo[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "codeclimate:  " + match
+	case regexp.MustCompile(`(?i)[\"']?codacy[_-]?project[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "codacy:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cocoapods[_-]?trunk[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cocoapods:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cocoapods[_-]?trunk[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cocoapods:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cn[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cn:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cn[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cn:  " + match
+	case regexp.MustCompile(`(?i)[\"']?clu[_-]?ssh[_-]?private[_-]?key[_-]?base64[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "clu:  " + match
+	case regexp.MustCompile(`(?i)[\"']?clu[_-]?repo[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "clu:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloudinary[_-]?url[_-]?staging[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloudinary:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloudinary[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloudinary:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloudflare[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloudflare:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloudflare[_-]?auth[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloudflare:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloudflare[_-]?auth[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloudflare:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloudflare[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloudflare:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?service[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloudant:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?processed[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloudant:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloudant:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?parsed[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloudant:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?order[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloudant:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?instance[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloudant:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloudant:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?audited[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloudant:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloudant[_-]?archived[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloudant:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cloud[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cloud:  " + match
+	case regexp.MustCompile(`(?i)[\"']?clojars[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "clojars:  " + match
+	case regexp.MustCompile(`(?i)[\"']?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "client:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cli[_-]?e2e[_-]?cma[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cli:  " + match
+	case regexp.MustCompile(`(?i)[\"']?claimr[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "claimr:  " + match
+	case regexp.MustCompile(`(?i)[\"']?claimr[_-]?superuser[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "claimr:  " + match
+	case regexp.MustCompile(`(?i)[\"']?claimr[_-]?db[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "claimr:  " + match
+	case regexp.MustCompile(`(?i)[\"']?claimr[_-]?database[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "claimr:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ci[_-]?user[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ci:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ci[_-]?server[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ci:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ci[_-]?registry[_-]?user[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ci:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ci[_-]?project[_-]?url[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ci:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ci[_-]?deploy[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ci:  " + match
+	case regexp.MustCompile(`(?i)[\"']?chrome[_-]?refresh[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "chrome:  " + match
+	case regexp.MustCompile(`(?i)[\"']?chrome[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "chrome:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cheverny[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cheverny:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cf[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cf:  " + match
+	case regexp.MustCompile(`(?i)[\"']?certificate[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "certificate:  " + match
+	case regexp.MustCompile(`(?i)[\"']?censys[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "censys:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cattle[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cattle:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cattle[_-]?agent[_-]?instance[_-]?auth[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cattle:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cattle[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cattle:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cargo[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cargo:  " + match
+	case regexp.MustCompile(`(?i)[\"']?cache[_-]?s3[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "cache:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bx[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bx:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bx[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bx:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bundlesize[_-]?github[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bundlesize:  " + match
+	case regexp.MustCompile(`(?i)[\"']?built[_-]?branch[_-]?deploy[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "built:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bucketeer[_-]?aws[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bucketeer:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bucketeer[_-]?aws[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bucketeer:  " + match
+	case regexp.MustCompile(`(?i)[\"']?browserstack[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "browserstack:  " + match
+	case regexp.MustCompile(`(?i)[\"']?browser[_-]?stack[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "browser:  " + match
+	case regexp.MustCompile(`(?i)[\"']?brackets[_-]?repo[_-]?oauth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "brackets:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bluemix[_-]?username[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bluemix:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bluemix[_-]?pwd[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bluemix:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bluemix[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bluemix:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bluemix[_-]?pass[_-]?prod[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bluemix:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bluemix[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bluemix:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bluemix[_-]?auth[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bluemix:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bluemix[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bluemix:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bintraykey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bintraykey:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bintray[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bintray:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bintray[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bintray:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bintray[_-]?gpg[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bintray:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bintray[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bintray:  " + match
+	case regexp.MustCompile(`(?i)[\"']?bintray[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "bintray:  " + match
+	case regexp.MustCompile(`(?i)[\"']?b2[_-]?bucket[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "b2:  " + match
+	case regexp.MustCompile(`(?i)[\"']?b2[_-]?app[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "b2:  " + match
+	case regexp.MustCompile(`(?i)[\"']?awssecretkey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "awssecretkey:  " + match
+	case regexp.MustCompile(`(?i)[\"']?awscn[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "awscn:  " + match
+	case regexp.MustCompile(`(?i)[\"']?awscn[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "awscn:  " + match
+	case regexp.MustCompile(`(?i)[\"']?awsaccesskeyid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "awsaccesskeyid:  " + match
+	case regexp.MustCompile(`(?i)[\"']?aws[_-]?ses[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "aws:  " + match
+	case regexp.MustCompile(`(?i)[\"']?aws[_-]?ses[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "aws:  " + match
+	case regexp.MustCompile(`(?i)[\"']?aws[_-]?secrets[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "aws:  " + match
+	case regexp.MustCompile(`(?i)[\"']?aws[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "aws:  " + match
+	case regexp.MustCompile(`(?i)[\"']?aws[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "aws:  " + match
+	case regexp.MustCompile(`(?i)[\"']?aws[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "aws:  " + match
+	case regexp.MustCompile(`(?i)[\"']?aws[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "aws:  " + match
+	case regexp.MustCompile(`(?i)[\"']?aws[_-]?config[_-]?secretaccesskey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "aws:  " + match
+	case regexp.MustCompile(`(?i)[\"']?aws[_-]?config[_-]?accesskeyid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "aws:  " + match
+	case regexp.MustCompile(`(?i)[\"']?aws[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "aws:  " + match
+	case regexp.MustCompile(`(?i)[\"']?aws[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "aws:  " + match
+	case regexp.MustCompile(`(?i)[\"']?aws[_-]?access[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "aws:  " + match
+	case regexp.MustCompile(`(?i)[\"']?author[_-]?npm[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "author:  " + match
+	case regexp.MustCompile(`(?i)[\"']?author[_-]?email[_-]?addr[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "author:  " + match
+	case regexp.MustCompile(`(?i)[\"']?auth0[_-]?client[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "auth0:  " + match
+	case regexp.MustCompile(`(?i)[\"']?auth0[_-]?api[_-]?clientsecret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "auth0:  " + match
+	case regexp.MustCompile(`(?i)[\"']?auth[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "auth:  " + match
+	case regexp.MustCompile(`(?i)[\"']?assistant[_-]?iam[_-]?apikey[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "assistant:  " + match
+	case regexp.MustCompile(`(?i)[\"']?artifacts[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "artifacts:  " + match
+	case regexp.MustCompile(`(?i)[\"']?artifacts[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "artifacts:  " + match
+	case regexp.MustCompile(`(?i)[\"']?artifacts[_-]?bucket[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "artifacts:  " + match
+	case regexp.MustCompile(`(?i)[\"']?artifacts[_-]?aws[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "artifacts:  " + match
+	case regexp.MustCompile(`(?i)[\"']?artifacts[_-]?aws[_-]?access[_-]?key[_-]?id[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "artifacts:  " + match
+	case regexp.MustCompile(`(?i)[\"']?artifactory[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "artifactory:  " + match
+	case regexp.MustCompile(`(?i)[\"']?argos[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "argos:  " + match
+	case regexp.MustCompile(`(?i)[\"']?apple[_-]?id[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "apple:  " + match
+	case regexp.MustCompile(`(?i)[\"']?appclientsecret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "appclientsecret:  " + match
+	case regexp.MustCompile(`(?i)[\"']?app[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "app:  " + match
+	case regexp.MustCompile(`(?i)[\"']?app[_-]?secrete[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "app:  " + match
+	case regexp.MustCompile(`(?i)[\"']?app[_-]?report[_-]?token[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "app:  " + match
+	case regexp.MustCompile(`(?i)[\"']?app[_-]?bucket[_-]?perm[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "app:  " + match
+	case regexp.MustCompile(`(?i)[\"']?apigw[_-]?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "apigw:  " + match
+	case regexp.MustCompile(`(?i)[\"']?apiary[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "apiary:  " + match
+	case regexp.MustCompile(`(?i)[\"']?api[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "api:  " + match
+	case regexp.MustCompile(`(?i)[\"']?api[_-]?key[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "api:  " + match
+	case regexp.MustCompile(`(?i)[\"']?api[_-]?key[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "api:  " + match
+	case regexp.MustCompile(`(?i)[\"']?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "api:  " + match
+	case regexp.MustCompile(`(?i)[\"']?aos[_-]?sec[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "aos:  " + match
+	case regexp.MustCompile(`(?i)[\"']?aos[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "aos:  " + match
+	case regexp.MustCompile(`(?i)[\"']?ansible[_-]?vault[_-]?password[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "ansible:  " + match
+	case regexp.MustCompile(`(?i)[\"']?android[_-]?docs[_-]?deploy[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "android:  " + match
+	case regexp.MustCompile(`(?i)[\"']?anaconda[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "anaconda:  " + match
+	case regexp.MustCompile(`(?i)[\"']?amazon[_-]?secret[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "amazon:  " + match
+	case regexp.MustCompile(`(?i)[\"']?amazon[_-]?bucket[_-]?name[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "amazon:  " + match
+	case regexp.MustCompile(`(?i)[\"']?alicloud[_-]?secret[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "alicloud:  " + match
+	case regexp.MustCompile(`(?i)[\"']?alicloud[_-]?access[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "alicloud:  " + match
+	case regexp.MustCompile(`(?i)[\"']?alias[_-]?pass[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "alias:  " + match
+	case regexp.MustCompile(`(?i)[\"']?algolia[_-]?search[_-]?key[_-]?1[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "algolia:  " + match
+	case regexp.MustCompile(`(?i)[\"']?algolia[_-]?search[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "algolia:  " + match
+	case regexp.MustCompile(`(?i)[\"']?algolia[_-]?search[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "algolia:  " + match
+	case regexp.MustCompile(`(?i)[\"']?algolia[_-]?api[_-]?key[_-]?search[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "algolia:  " + match
+	case regexp.MustCompile(`(?i)[\"']?algolia[_-]?api[_-]?key[_-]?mcm[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "algolia:  " + match
+	case regexp.MustCompile(`(?i)[\"']?algolia[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "algolia:  " + match
+	case regexp.MustCompile(`(?i)[\"']?algolia[_-]?admin[_-]?key[_-]?mcm[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "algolia:  " + match
+	case regexp.MustCompile(`(?i)[\"']?algolia[_-]?admin[_-]?key[_-]?2[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "algolia:  " + match
+	case regexp.MustCompile(`(?i)[\"']?algolia[_-]?admin[_-]?key[_-]?1[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "algolia:  " + match
+	case regexp.MustCompile(`(?i)[\"']?air[-_]?table[-_]?api[-_]?key[\"']?[=:][\"']?.+[\"']`).MatchString(match):
+		return "air:  " + match
+	case regexp.MustCompile(`(?i)[\"']?adzerk[_-]?api[_-]?key[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "adzerk:  " + match
+	case regexp.MustCompile(`(?i)[\"']?admin[_-]?email[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "admin:  " + match
+	case regexp.MustCompile(`(?i)[\"']?account[_-]?sid[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "account:  " + match
+	case regexp.MustCompile(`(?i)[\"']?access[_-]?token[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "access:  " + match
+	case regexp.MustCompile(`(?i)[\"']?access[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "access:  " + match
+	case regexp.MustCompile(`(?i)[\"']?access[_-]?key[_-]?secret[\"']?[^\\S\r\n]*[=:][^\\S\r\n]*[\"']?[\\w-]+[\"']?`).MatchString(match):
+		return "access:  " + match
+	default:
+		return "Unknown Secret: " + match
+	}
 }

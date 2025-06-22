@@ -2,23 +2,37 @@ package utils
 
 import (
 	"fmt"
-
 	"github.com/fatih/color"
 )
 
 func PrintBanner() {
 	banner := `
-    __ __          __      __  
-   / //_/___  ____/ /___  / /__
-  / ,< / __ \/ __  / __ \/ //_/
- / /| / /_/ / /_/ / /_/ / ,<   
-/_/ |_\____/\__,_/\____/_/|_|  
+██╗  ██╗ ██████╗ ██████╗  ██████╗ ██╗  ██╗
+██║ ██╔╝██╔═══██╗██╔══██╗██╔═══██╗██║ ██╔╝
+█████╔╝ ██║   ██║██║  ██║██║   ██║█████╔╝
+██╔═██╗ ██║   ██║██║  ██║██║   ██║██╔═██╗
+██║  ██╗╚██████╔╝██████╔╝╚██████╔╝██║  ██╗
+╚═╝  ╚═╝ ╚═════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝
 `
 
-	darkPink := color.New(color.FgHiMagenta).SprintFunc()
+	// Color definitions
+	darkPink := color.New(color.FgHiMagenta, color.Bold).SprintFunc()
 	blueItalic := color.New(color.FgBlue, color.Italic).SprintFunc()
-	red := color.New(color.FgRed).SprintFunc()
+	red := color.New(color.FgRed, color.Bold).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	cyan := color.New(color.FgCyan).SprintFunc()
 
-	fmt.Println(darkPink(banner))
-	fmt.Printf("               Version [%s] [%s]\n\n", red("0.0.6"), blueItalic("github.com/rhyru9/kodok"))
+	// Print the banner with color
+	fmt.Print(darkPink(banner))
+
+	// Additional info
+	fmt.Printf(" %s %s | %s %s\n",
+		cyan("Version:"), red("v0.0.7"),
+		cyan("GitHub:"), blueItalic("github.com/rhyru9/kodok"))
+
+	fmt.Printf(" %s %s\n",
+		green("Description:"), "Advanced JavaScript Security & Path Discovery Scanner")
+
+	fmt.Printf(" %s %s\n\n",
+		green("Features:"), "Custom Headers • Authentication • Domain Filtering • Batch Scanning")
 }
