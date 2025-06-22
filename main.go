@@ -32,10 +32,10 @@ func (h *headersFlag) Set(value string) error {
 }
 
 var (
-	urlFile       = flag.String("fj", "", "File daftar URL JS")
-	singleURL     = flag.String("u", "", "URL tunggal untuk diproses")
-	allowedDomain = flag.String("ad", "", "Domain yang diperbolehkan dalam output (pisahkan dengan koma)")
-	outputFile    = flag.String("o", "", "Nama file output (tanpa extension, akan menghasilkan .json dan .txt)")
+	urlFile       = flag.String("fj", "", "File containing list of JS URLs")
+	singleURL     = flag.String("u", "", "Single URL to process")
+	allowedDomain = flag.String("ad", "", "Allowed domains in output (comma separated)")
+	outputFile    = flag.String("o", "", "Output filename (without extension, will create .json and .txt)")
 	deepScan      = flag.Bool("deep", false, "Enable deep scanning of discovered JS files")
 	maxDepth      = flag.Int("depth", 3, "Maximum depth for recursive JS scanning")
 	headers       headersFlag
@@ -49,7 +49,6 @@ var (
 	urlMutex       sync.RWMutex
 )
 
-// ScanResult holds the results for a single URL scan
 type ScanResult struct {
 	URL         string    `json:"url"`
 	Paths       []string  `json:"paths"`
@@ -64,7 +63,6 @@ type ScanResult struct {
 	ParentURL   string    `json:"parent_url,omitempty"`
 }
 
-// OverallSummary contains the complete scan results
 type OverallSummary struct {
 	TotalURLs       int          `json:"total_urls"`
 	SuccessfulScans int          `json:"successful_scans"`
@@ -78,15 +76,13 @@ type OverallSummary struct {
 }
 
 func main() {
-	flag.Var(&headers, "H", "Custom header (dapat digunakan berkali-kali)")
+	flag.Var(&headers, "H", "Custom header (can be used multiple times)")
 	
-	// Show banner first, before parsing flags
 	utils.PrintBanner()
 	
 	flag.Parse()
 	
-	// Show usage if help flag is used or no arguments provided
-	if *showHelp || (flag.NArg() == 0 && *singleURL == "" && *urlFile == "") {
+	if *showHelp || (flag.NArg() == 0 && *singleURL == "" && *urlFile == "" && isStdinEmpty()) {
 		showUsage()
 		return
 	}
@@ -96,12 +92,11 @@ func main() {
 	urls := getURLs()
 
 	if len(urls) == 0 {
-		fmt.Println("Tidak ada URL yang diberikan. Gunakan -fj untuk file atau -u untuk URL tunggal.")
+		fmt.Println("No URLs provided. Use -fj for file or -u for single URL.")
 		showUsage()
 		return
 	}
 
-	// Display scan configuration
 	blue := color.New(color.FgBlue).SprintFunc()
 	cyan := color.New(color.FgCyan).SprintFunc()
 	green := color.New(color.FgGreen).SprintFunc()
@@ -111,7 +106,6 @@ func main() {
 		fmt.Printf("%s %s\n", blue("[i] Max Depth:"), cyan(fmt.Sprintf("%d", *maxDepth)))
 	}
 
-	// Display header information
 	if len(customHeaders) > 0 {
 		fmt.Printf("%s %s\n", blue("[i] Using"), cyan(fmt.Sprintf("%d custom headers", len(customHeaders))))
 		for key, value := range customHeaders {
@@ -121,7 +115,6 @@ func main() {
 		fmt.Println()
 	}
 
-	// Setup output files if specified
 	var jsonOutputFile, txtOutputFile *os.File
 	if *outputFile != "" {
 		jsonFilename := *outputFile + ".json"
@@ -130,25 +123,24 @@ func main() {
 		var err error
 		jsonOutputFile, err = os.Create(jsonFilename)
 		if err != nil {
-			fmt.Printf("Gagal membuat file JSON output: %s\n", err)
+			fmt.Printf("Failed to create JSON output file: %s\n", err)
 			return
 		}
 		defer jsonOutputFile.Close()
 
 		txtOutputFile, err = os.Create(txtFilename)
 		if err != nil {
-			fmt.Printf("Gagal membuat file TXT output: %s\n", err)
+			fmt.Printf("Failed to create TXT output file: %s\n", err)
 			return
 		}
 		defer txtOutputFile.Close()
 
-		fmt.Printf("Output akan disimpan ke: %s dan %s\n", jsonFilename, txtFilename)
+		fmt.Printf("Output will be saved to: %s and %s\n", jsonFilename, txtFilename)
 	}
 
 	var allResults []ScanResult
 	var resultsMutex sync.Mutex
 
-	// Process initial URLs
 	for _, initialURL := range urls {
 		results := processURLRecursively(initialURL, allowedDomains, customHeaders, 0, "")
 		resultsMutex.Lock()
@@ -156,52 +148,98 @@ func main() {
 		resultsMutex.Unlock()
 	}
 
-	// Write results to files if output files are specified
 	if jsonOutputFile != nil && txtOutputFile != nil {
 		writeJSONResults(jsonOutputFile, allResults)
 		writeTXTResults(txtOutputFile, allResults)
-		fmt.Printf("\nHasil berhasil disimpan ke: %s.json dan %s.txt\n", *outputFile, *outputFile)
+		fmt.Printf("\nResults saved to: %s.json and %s.txt\n", *outputFile, *outputFile)
 	}
 
-	// Display final summary
 	fmt.Printf("\n%s\n", strings.Repeat("═", 80))
 	fmt.Printf("%s %s\n", green("🎯 Final Summary:"), blue(fmt.Sprintf("Total URLs processed: %d", len(allResults))))
 	fmt.Printf("%s\n", strings.Repeat("═", 80))
 }
 
-// Add this function to clean and validate URLs
+func isStdinEmpty() bool {
+	stat, _ := os.Stdin.Stat()
+	return (stat.Mode() & os.ModeCharDevice) != 0
+}
+
 func cleanAndValidateURL(rawURL string) string {
 	if rawURL == "" {
 		return ""
 	}
 	
-	// Remove trailing backslashes and clean up
 	cleaned := strings.TrimRight(rawURL, "\\")
 	cleaned = strings.TrimSpace(cleaned)
 	
-	// Skip if empty after cleaning
-	if cleaned == "" {
-		return ""
-	}
-	
-	// Skip if it's just a scheme without content
-	if cleaned == "http://" || cleaned == "https://" {
+	if cleaned == "" || cleaned == "http://" || cleaned == "https://" {
 		return ""
 	}
 	
 	return cleaned
 }
 
+func getURLs() []string {
+	var urls []string
+	var rawURLs []string
+
+	// Check for piped input first
+	stat, _ := os.Stdin.Stat()
+	if (stat.Mode() & os.ModeCharDevice) == 0 {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if line != "" {
+				rawURLs = append(rawURLs, line)
+			}
+		}
+	}
+
+	// Then check for file input
+	if *urlFile != "" {
+		file, err := os.Open(*urlFile)
+		if err != nil {
+			fmt.Printf("Failed to open file: %s\n", err)
+		} else {
+			defer file.Close()
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				line := strings.TrimSpace(scanner.Text())
+				if line != "" && !strings.HasPrefix(line, "#") {
+					rawURLs = append(rawURLs, line)
+				}
+			}
+		}
+	}
+
+	// Finally check for single URL
+	if *singleURL != "" {
+		rawURLs = append(rawURLs, *singleURL)
+	}
+
+	// Clean and validate all URLs
+	for _, rawURL := range rawURLs {
+		cleanURL := cleanAndValidateURL(rawURL)
+		if cleanURL != "" {
+			if parsedURL, err := url.Parse(cleanURL); err == nil {
+				if parsedURL.Scheme == "http" || parsedURL.Scheme == "https" {
+					urls = append(urls, cleanURL)
+				}
+			}
+		}
+	}
+	
+	return urls
+}
+
 func processURLRecursively(targetURL string, allowedDomains []string, customHeaders map[string]string, depth int, parentURL string) []ScanResult {
 	var results []ScanResult
 	
-	// Clean and validate URL before processing
 	cleanURL := cleanAndValidateURL(targetURL)
 	if cleanURL == "" {
 		return results
 	}
 	
-	// Check if we've already processed this URL
 	urlMutex.Lock()
 	if processedURLs[cleanURL] {
 		urlMutex.Unlock()
@@ -210,16 +248,13 @@ func processURLRecursively(targetURL string, allowedDomains []string, customHead
 	processedURLs[cleanURL] = true
 	urlMutex.Unlock()
 
-	// Check depth limit
 	if *deepScan && depth > *maxDepth {
 		return results
 	}
 
-	// Process current URL
 	result := processURL(cleanURL, allowedDomains, customHeaders, depth, parentURL)
 	results = append(results, result)
 
-	// If deep scan is enabled and this scan was successful, look for JS files to scan
 	if *deepScan && result.Error == "" && depth < *maxDepth {
 		jsFiles := extractJSFiles(result.Paths, cleanURL)
 		
@@ -229,7 +264,7 @@ func processURLRecursively(targetURL string, allowedDomains []string, customHead
 			fmt.Printf("\n%s %s %s\n", blue("🔗 Deep scanning"), magenta(fmt.Sprintf("%d JS files", len(jsFiles))), blue("from this URL..."))
 			
 			var wg sync.WaitGroup
-			sem := make(chan struct{}, 3) // Limit concurrent deep scans
+			sem := make(chan struct{}, 3)
 			var deepResults []ScanResult
 			var deepMutex sync.Mutex
 
@@ -257,7 +292,6 @@ func processURLRecursively(targetURL string, allowedDomains []string, customHead
 	return results
 }
 
-// Fixed extractJSFiles function to properly construct URLs
 func extractJSFiles(paths []string, baseURL string) []string {
 	var jsFiles []string
 	seen := make(map[string]bool)
@@ -268,7 +302,6 @@ func extractJSFiles(paths []string, baseURL string) []string {
 	}
 
 	for _, path := range paths {
-		// Clean the path first
 		cleanPath := cleanAndValidateURL(path)
 		if cleanPath == "" {
 			continue
@@ -278,13 +311,10 @@ func extractJSFiles(paths []string, baseURL string) []string {
 			var fullURL string
 			
 			if strings.HasPrefix(cleanPath, "http://") || strings.HasPrefix(cleanPath, "https://") {
-				// Already a full URL
 				fullURL = cleanPath
 			} else if strings.HasPrefix(cleanPath, "/") {
-				// Absolute path - construct full URL with base domain
 				fullURL = fmt.Sprintf("%s://%s%s", parsedBase.Scheme, parsedBase.Host, cleanPath)
 			} else {
-				// Relative path - this shouldn't happen often for JS files, but handle it
 				baseDir := strings.TrimSuffix(parsedBase.Path, "/")
 				if baseDir == "" {
 					fullURL = fmt.Sprintf("%s://%s/%s", parsedBase.Scheme, parsedBase.Host, cleanPath)
@@ -293,12 +323,9 @@ func extractJSFiles(paths []string, baseURL string) []string {
 				}
 			}
 
-			// Validate the constructed URL
 			finalURL := cleanAndValidateURL(fullURL)
 			if finalURL != "" && !seen[finalURL] {
-				// Test if URL is parseable
 				if parsedURL, err := url.Parse(finalURL); err == nil {
-					// Additional validation - make sure it's a valid HTTP/HTTPS URL
 					if parsedURL.Scheme == "http" || parsedURL.Scheme == "https" {
 						seen[finalURL] = true
 						jsFiles = append(jsFiles, finalURL)
@@ -311,61 +338,9 @@ func extractJSFiles(paths []string, baseURL string) []string {
 	return jsFiles
 }
 
-func getURLs() []string {
-	var urls []string
-	var rawURLs []string
-
-	if *urlFile != "" {
-		file, err := os.Open(*urlFile)
-		if err != nil {
-			fmt.Printf("Gagal membuka file: %s\n", err)
-			return nil
-		}
-		defer file.Close()
-
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			line := strings.TrimSpace(scanner.Text())
-			if line != "" && !strings.HasPrefix(line, "#") { // Skip empty lines and comments
-				rawURLs = append(rawURLs, line)
-			}
-		}
-	} else if *singleURL != "" {
-		rawURLs = append(rawURLs, *singleURL)
-	} else {
-		stat, _ := os.Stdin.Stat()
-		if (stat.Mode() & os.ModeCharDevice) == 0 {
-			scanner := bufio.NewScanner(os.Stdin)
-			for scanner.Scan() {
-				line := strings.TrimSpace(scanner.Text())
-				if line != "" {
-					rawURLs = append(rawURLs, line)
-				}
-			}
-		}
-	}
-	
-	// Clean and validate all URLs
-	for _, rawURL := range rawURLs {
-		cleanURL := cleanAndValidateURL(rawURL)
-		if cleanURL != "" {
-			// Additional validation - must be a valid URL
-			if parsedURL, err := url.Parse(cleanURL); err == nil {
-				// Make sure it's HTTP or HTTPS
-				if parsedURL.Scheme == "http" || parsedURL.Scheme == "https" {
-					urls = append(urls, cleanURL)
-				}
-			}
-		}
-	}
-	
-	return urls
-}
-
 func processURL(targetURL string, allowedDomains []string, customHeaders map[string]string, depth int, parentURL string) ScanResult {
 	startTime := time.Now()
 	
-	// Validate URL before processing
 	if targetURL == "" {
 		return ScanResult{
 			URL:       targetURL,
@@ -377,7 +352,6 @@ func processURL(targetURL string, allowedDomains []string, customHeaders map[str
 		}
 	}
 	
-	// Test URL parsing
 	if _, err := url.Parse(targetURL); err != nil {
 		return ScanResult{
 			URL:       targetURL,
@@ -389,7 +363,6 @@ func processURL(targetURL string, allowedDomains []string, customHeaders map[str
 		}
 	}
 	
-	// Color definitions
 	blue := color.New(color.FgBlue, color.Bold).SprintFunc()
 	cyan := color.New(color.FgCyan).SprintFunc()
 	green := color.New(color.FgGreen).SprintFunc()
@@ -398,10 +371,8 @@ func processURL(targetURL string, allowedDomains []string, customHeaders map[str
 	white := color.New(color.FgWhite).SprintFunc()
 	magenta := color.New(color.FgMagenta).SprintFunc()
 
-	// Check if this is a JS file
 	isJSFile := jsFileRegex.MatchString(targetURL)
 	
-	// Header dengan separator dan depth indicator
 	fmt.Printf("\n%s\n", strings.Repeat("─", 80))
 	if depth > 0 {
 		indent := strings.Repeat("  ", depth)
@@ -436,7 +407,6 @@ func processURL(targetURL string, allowedDomains []string, customHeaders map[str
 	var resultPaths []string
 	var resultSecrets []string
 
-	// Process paths
 	paths := parser.Parse(content)
 	if len(paths) > 0 {
 		fmt.Printf("\n%s %s\n", green("📂"), blue("Paths Found:"))
@@ -444,7 +414,7 @@ func processURL(targetURL string, allowedDomains []string, customHeaders map[str
 	}
 	
 	for _, path := range paths {
-		cleanPath := cleanAndValidateURL(path) // Clean path before validation
+		cleanPath := cleanAndValidateURL(path)
 		if cleanPath != "" && validPathRegex.MatchString(cleanPath) && isAllowedDomain(cleanPath, allowedDomains) {
 			mu.Lock()
 			if !uniquePaths[cleanPath] {
@@ -452,7 +422,6 @@ func processURL(targetURL string, allowedDomains []string, customHeaders map[str
 				pathCount++
 				resultPaths = append(resultPaths, cleanPath)
 				
-				// Highlight JS files
 				if jsFileRegex.MatchString(cleanPath) {
 					fmt.Printf("  %s %s %s\n", green("→"), formatPath(cleanPath), magenta("[JS]"))
 				} else {
@@ -463,7 +432,6 @@ func processURL(targetURL string, allowedDomains []string, customHeaders map[str
 		}
 	}
 
-	// Process secrets
 	secrets := scanner.Scan(content)
 	filteredSecrets := filterUniqueSecrets(secrets, allowedDomains)
 	
@@ -483,7 +451,6 @@ func processURL(targetURL string, allowedDomains []string, customHeaders map[str
 		mu.Unlock()
 	}
 
-	// Summary
 	fmt.Printf("\n%s\n", strings.Repeat("─", 40))
 	fmt.Printf("%s %s: %d | %s: %d\n", 
 		blue("📊 Summary"), 
@@ -526,7 +493,6 @@ func formatPath(path string) string {
 		return cyan(path)
 	}
 	
-	// Truncate long paths nicely
 	return cyan(path[:67] + "...")
 }
 
@@ -534,13 +500,11 @@ func formatSecret(secret string) string {
 	red := color.New(color.FgRed).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
 	
-	// Split secret type from value
 	parts := strings.SplitN(secret, ": ", 2)
 	if len(parts) == 2 {
 		secretType := strings.ToUpper(parts[0])
 		secretValue := parts[1]
 		
-		// Truncate long secret values
 		if len(secretValue) > 50 {
 			secretValue = secretValue[:47] + "..."
 		}
@@ -548,7 +512,6 @@ func formatSecret(secret string) string {
 		return fmt.Sprintf("%s %s", yellow(secretType+":"), red(secretValue))
 	}
 	
-	// Fallback for secrets without clear separation
 	if len(secret) > 50 {
 		secret = secret[:47] + "..."
 	}
@@ -561,7 +524,7 @@ func showUsage() {
 	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
 	magenta := color.New(color.FgMagenta).SprintFunc()
-	white := color.New(color.FgWhite).SprintFunc() // Added missing white color definition
+	white := color.New(color.FgWhite).SprintFunc()
 	
 	fmt.Printf("\n%s\n", blue("KODOK - JavaScript Security Scanner"))
 	fmt.Printf("%s\n\n", strings.Repeat("═", 50))
@@ -569,19 +532,18 @@ func showUsage() {
 	fmt.Printf("%s\n", blue("📋 Basic Usage:"))
 	fmt.Printf("  %s\n", green("./kodok -u https://example.com/app.js"))
 	fmt.Printf("  %s\n", green("./kodok -fj urls.txt"))
-	fmt.Printf("  %s\n\n", green("./kodok -u https://example.com/app.js -o results"))
+	fmt.Printf("  %s\n", green("cat urls.txt | ./kodok -o results"))
+	fmt.Printf("  %s\n\n", green("cat urls.txt | ./kodok -H 'Auth: token' -o results"))
 	
 	fmt.Printf("%s\n", blue("🔍 Deep Scanning:"))
 	fmt.Printf("  %s\n", magenta("./kodok -u https://example.com/page -deep"))
 	fmt.Printf("  %s\n", magenta("./kodok -fj urls.txt -deep -depth 2"))
-	fmt.Printf("  %s\n\n", magenta("./kodok -u https://example.com -deep -depth 3 -o results"))
+	fmt.Printf("  %s\n\n", magenta("cat urls.txt | ./kodok -deep -depth 3 -o results"))
 	
 	fmt.Printf("%s\n", blue("🔐 With Authentication:"))
 	fmt.Printf("  %s\n", cyan("./kodok -u https://example.com/app.js -H 'Cookie: session=abc123'"))
-	fmt.Printf("  %s\n", cyan("./kodok -u https://example.com/api.js -H 'Authorization: Bearer token123'"))
-	fmt.Printf("  %s\n\n", cyan("./kodok -fj urls.txt -H 'X-API-Key: your-key' -deep -o results"))
-	
-	fmt.Printf("%s\n", blue("⚙️  Command Options:"))
+	fmt.Printf("  %s\n", cyan("cat urls.txt | ./kodok -H 'X-API-Key: your-key' -deep -o results"))
+	fmt.Printf("\n%s\n", blue("⚙️  Command Options:"))
 	fmt.Printf("  %s  %s\n", yellow("-u"), "Target URL to scan")
 	fmt.Printf("  %s  %s\n", yellow("-fj"), "File containing JavaScript URLs")
 	fmt.Printf("  %s  %s\n", yellow("-H"), "Custom header (can be used multiple times)")
@@ -593,11 +555,10 @@ func showUsage() {
 	fmt.Printf("\n%s\n", blue("📁 Output Files:"))
 	fmt.Printf("  %s  %s\n", cyan("filename.json"), "Detailed results with metadata and depth info")
 	fmt.Printf("  %s  %s\n", cyan("filename.txt"), "Clean paths and URLs only")
-	fmt.Printf("\n%s\n", blue("🎯 Deep Scan Features:"))
-	fmt.Printf("  • %s\n", white("Automatically discovers and scans JS files"))
-	fmt.Printf("  • %s\n", white("Prevents infinite loops with URL tracking"))
-	fmt.Printf("  • %s\n", white("Configurable depth limits"))
-	fmt.Printf("  • %s\n", white("Parent-child URL relationship tracking"))
+	fmt.Printf("\n%s\n", blue("🎯 Pipeline Examples:"))
+	fmt.Printf("  • %s\n", white("cat urls.txt | ./kodok -o output"))
+	fmt.Printf("  • %s\n", white("grep 'example.com' logs.txt | ./kodok -H 'Auth: token' -deep"))
+	fmt.Printf("  • %s\n", white("subfinder -d example.com | ./kodok -o results"))
 	fmt.Printf("\n%s\n", strings.Repeat("═", 50))
 }
 
@@ -626,7 +587,6 @@ func maskSensitiveHeader(key, value string) string {
 			if len(value) <= 8 {
 				return strings.Repeat("*", len(value))
 			}
-			// Show first 4 and last 4 characters with stars in between
 			return value[:4] + strings.Repeat("*", len(value)-8) + value[len(value)-4:]
 		}
 	}
@@ -668,14 +628,12 @@ func isAllowedDomainForSecret(secret string, allowedDomains []string) bool {
 		return true
 	}
 
-	// For secrets, be more permissive since they might not contain URLs
 	for _, domain := range allowedDomains {
 		if strings.Contains(secret, domain) {
 			return true
 		}
 	}
 	
-	// Allow secrets that don't contain domains (since secrets might not contain domains)
 	return true
 }
 
@@ -715,30 +673,23 @@ func writeTXTResults(file *os.File, results []ScanResult) {
 	writer := bufio.NewWriter(file)
 	defer writer.Flush()
 
-	// Separate full URLs and relative paths
 	fullURLs := make(map[string]bool)
 	relativePaths := make(map[string]bool)
 	
 	for _, result := range results {
 		if result.Error == "" {
-			// Add the original URL (always a full URL)
 			fullURLs[result.URL] = true
 
-			// Process all found paths
 			for _, path := range result.Paths {
-				// Check if it's a full URL (starts with http:// or https://)
 				if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
 					fullURLs[path] = true
 				} else if strings.HasPrefix(path, "/") {
-					// Relative path starting with /
 					relativePaths[path] = true
 				}
-				// Skip relative paths that don't start with / as they're usually not useful endpoints
 			}
 		}
 	}
 
-	// Write full URLs first (sorted)
 	var sortedURLs []string
 	for url := range fullURLs {
 		sortedURLs = append(sortedURLs, url)
@@ -749,7 +700,6 @@ func writeTXTResults(file *os.File, results []ScanResult) {
 		writer.WriteString(url + "\n")
 	}
 
-	// Write relative paths (sorted) 
 	var sortedPaths []string
 	for path := range relativePaths {
 		sortedPaths = append(sortedPaths, path)
