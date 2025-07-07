@@ -26,9 +26,7 @@ A sophisticated JavaScript scanner designed to analyze JavaScript files for path
 go install github.com/rhyru9/kodok@latest
 
 # Build from source
-git clone https://github.com/rhyru9/kodok.git
-cd kodok
-go build -o kodok .
+git clone https://github.com/rhyru9/kodok.git && cd kodok && go build -o kodok . && sudo mv kodok /usr/local/bin/
 ```
 
 ## Basic Usage
