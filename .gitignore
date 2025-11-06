@@ -1,0 +1,20 @@
+# Binaries
+kodok
+kodok.exe
+
+# Go
+/go/bin/
+/go/pkg/
+*.test
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Outputs
+*.json
+*.txt
+/results/

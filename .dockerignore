@@ -1,0 +1,30 @@
+# .dockerignore for KODOK
+
+# Git
+.git
+.gitignore
+README.md
+
+# Go
+*.go
+go.mod
+go.sum
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# OS
+.DS_Store
+
+# Tests
+*_test.go
+
+# Build artifacts (we'll build fresh)
+kodok
+kodok.exe
+
+# Local configs
+config.yaml
+.env
