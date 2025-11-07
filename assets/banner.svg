@@ -1,0 +1,359 @@
+<svg viewBox="0 0 7680 3169" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d1117;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1a1f2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#161b22;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ffcc;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00d4ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7b68ee;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="glowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ffcc;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#7b68ee;stop-opacity:0.8" />
+    </linearGradient>
+    
+    <radialGradient id="orbGlow">
+      <stop offset="0%" style="stop-color:#00ffcc;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#00d4ff;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#7b68ee;stop-opacity:0" />
+    </radialGradient>
+    
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <filter id="ultraGlow">
+      <feGaussianBlur stdDeviation="15" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <filter id="neonGlow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Hexagon Pattern -->
+    <pattern id="hexPattern" x="0" y="0" width="120" height="104" patternUnits="userSpaceOnUse">
+      <path d="M30,0 L90,0 L120,52 L90,104 L30,104 L0,52 Z" fill="none" stroke="#00ffcc15" stroke-width="1"/>
+    </pattern>
+    
+    <!-- Data Flow Pattern -->
+    <pattern id="dataFlow" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
+      <circle cx="20" cy="20" r="2" fill="#00ffcc30">
+        <animate attributeName="cy" values="20;180;20" dur="4s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="100" cy="100" r="2" fill="#7b68ee30">
+        <animate attributeName="cy" values="100;20;100" dur="5s" repeatCount="indefinite"/>
+      </circle>
+    </pattern>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="7680" height="3169" fill="url(#bgGradient)"/>
+  <rect width="7680" height="3169" fill="url(#hexPattern)"/>
+  <rect width="7680" height="3169" fill="url(#dataFlow)" opacity="0.3"/>
+  
+  <!-- Ambient Glowing Orbs -->
+  <circle cx="1200" cy="800" r="400" fill="url(#orbGlow)" opacity="0.15">
+    <animate attributeName="r" values="400;450;400" dur="8s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="6480" cy="2369" r="350" fill="url(#orbGlow)" opacity="0.15">
+    <animate attributeName="r" values="350;400;350" dur="10s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="3840" cy="1584" r="600" fill="url(#orbGlow)" opacity="0.08">
+    <animate attributeName="r" values="600;700;600" dur="12s" repeatCount="indefinite"/>
+  </circle>
+  
+  <g opacity="0.4" stroke-width="2">
+    <!-- Top left network -->
+    <line x1="200" y1="300" x2="800" y2="300" stroke="#00ffcc"/>
+    <line x1="800" y1="300" x2="1200" y2="600" stroke="#00ffcc"/>
+    <line x1="1200" y1="600" x2="1600" y2="500" stroke="#00d4ff"/>
+    <circle cx="200" cy="300" r="10" fill="#00ffcc" filter="url(#neonGlow)"/>
+    <circle cx="800" cy="300" r="8" fill="#00ffcc"/>
+    <circle cx="1200" cy="600" r="12" fill="#00d4ff" filter="url(#neonGlow)"/>
+    <circle cx="1600" cy="500" r="8" fill="#00d4ff"/>
+    
+    <!-- Top right network -->
+    <line x1="7480" y1="400" x2="6880" y2="400" stroke="#7b68ee"/>
+    <line x1="6880" y1="400" x2="6480" y2="700" stroke="#7b68ee"/>
+    <line x1="6480" y1="700" x2="6080" y2="600" stroke="#00d4ff"/>
+    <circle cx="7480" cy="400" r="10" fill="#7b68ee" filter="url(#neonGlow)"/>
+    <circle cx="6880" cy="400" r="8" fill="#7b68ee"/>
+    <circle cx="6480" cy="700" r="12" fill="#00d4ff" filter="url(#neonGlow)"/>
+    <circle cx="6080" cy="600" r="8" fill="#00d4ff"/>
+    
+    <!-- Bottom left network -->
+    <line x1="400" y1="2869" x2="1000" y2="2869" stroke="#00ffcc"/>
+    <line x1="1000" y1="2869" x2="1400" y2="2569" stroke="#00ffcc"/>
+    <line x1="1400" y1="2569" x2="1800" y2="2669" stroke="#7b68ee"/>
+    <circle cx="400" cy="2869" r="10" fill="#00ffcc" filter="url(#neonGlow)"/>
+    <circle cx="1000" cy="2869" r="8" fill="#00ffcc"/>
+    <circle cx="1400" cy="2569" r="12" fill="#7b68ee" filter="url(#neonGlow)"/>
+    <circle cx="1800" cy="2669" r="8" fill="#7b68ee"/>
+    
+    <!-- Bottom right network -->
+    <line x1="7280" y1="2769" x2="6680" y2="2769" stroke="#7b68ee"/>
+    <line x1="6680" y1="2769" x2="6280" y2="2469" stroke="#7b68ee"/>
+    <line x1="6280" y1="2469" x2="5880" y2="2569" stroke="#00ffcc"/>
+    <circle cx="7280" cy="2769" r="10" fill="#7b68ee" filter="url(#neonGlow)"/>
+    <circle cx="6680" cy="2769" r="8" fill="#7b68ee"/>
+    <circle cx="6280" cy="2469" r="12" fill="#00ffcc" filter="url(#neonGlow)"/>
+    <circle cx="5880" cy="2569" r="8" fill="#00ffcc"/>
+  </g>
+  
+  <!-- Floating Particles -->
+  <g opacity="0.6">
+    <circle cx="600" cy="1000" r="3" fill="#00ffcc">
+      <animate attributeName="cy" values="1000;600;1000" dur="6s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="6s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1400" cy="1500" r="4" fill="#7b68ee">
+      <animate attributeName="cy" values="1500;1100;1500" dur="7s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="7s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="7080" cy="1200" r="3" fill="#00d4ff">
+      <animate attributeName="cy" values="1200;800;1200" dur="5.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="5.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="6280" cy="1800" r="4" fill="#00ffcc">
+      <animate attributeName="cy" values="1800;1400;1800" dur="6.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="6.5s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <g transform="translate(3840, 1400)">
+    <g transform="translate(-1600, 0)">
+      <path d="M -150,-300 L -150,350 M -150,-100 L 200,-300 M -150,150 L 200,350" 
+            stroke="url(#accentGradient)" stroke-width="80" stroke-linecap="round" 
+            stroke-linejoin="round" fill="none" filter="url(#ultraGlow)"/>
+      <circle cx="-150" cy="-300" r="15" fill="#00ffcc" filter="url(#neonGlow)"/>
+      <circle cx="-150" cy="350" r="15" fill="#7b68ee" filter="url(#neonGlow)"/>
+      <circle cx="200" cy="-300" r="15" fill="#00d4ff" filter="url(#neonGlow)"/>
+      <circle cx="200" cy="350" r="15" fill="#00ffcc" filter="url(#neonGlow)"/>
+    </g>
+    
+    <g transform="translate(-700, 0)">
+      <circle cx="0" cy="25" r="380" fill="none" stroke="url(#accentGradient)" 
+              stroke-width="12" filter="url(#ultraGlow)">
+        <animate attributeName="r" values="380;390;380" dur="3s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="0" cy="25" r="360" fill="none" stroke="url(#accentGradient)" 
+              stroke-width="6" opacity="0.5">
+        <animate attributeName="r" values="360;370;360" dur="3s" repeatCount="indefinite"/>
+      </circle>
+      
+      <ellipse cx="0" cy="50" rx="280" ry="320" fill="none" 
+               stroke="url(#accentGradient)" stroke-width="8" opacity="0.6"/>
+      
+      <!-- Stylized Eyes - Hexagonal -->
+      <g transform="translate(-120, -80)">
+        <path d="M 0,-60 L 52,-30 L 52,30 L 0,60 L -52,30 L -52,-30 Z" 
+              fill="none" stroke="#00ffcc" stroke-width="6" filter="url(#glow)"/>
+        <circle cx="0" cy="0" r="35" fill="#00ffcc" filter="url(#ultraGlow)">
+          <animate attributeName="opacity" values="0.8;1;0.8" dur="4s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="0" cy="0" r="20" fill="#0d1117"/>
+        <circle cx="5" cy="-5" r="8" fill="#00ffcc"/>
+      </g>
+      
+      <g transform="translate(120, -80)">
+        <path d="M 0,-60 L 52,-30 L 52,30 L 0,60 L -52,30 L -52,-30 Z" 
+              fill="none" stroke="#7b68ee" stroke-width="6" filter="url(#glow)"/>
+        <circle cx="0" cy="0" r="35" fill="#7b68ee" filter="url(#ultraGlow)">
+          <animate attributeName="opacity" values="0.8;1;0.8" dur="4s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="0" cy="0" r="20" fill="#0d1117"/>
+        <circle cx="5" cy="-5" r="8" fill="#7b68ee"/>
+      </g>
+      
+      <g stroke-width="3" opacity="0.8">
+        <!-- Vertical spine -->
+        <line x1="0" y1="-80" x2="0" y2="200" stroke="url(#accentGradient)">
+          <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/>
+        </line>
+        
+        <!-- Branch circuits -->
+        <path d="M -80,-20 L 0,0 L 80,-20" stroke="#00ffcc" fill="none">
+          <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur="2.2s" repeatCount="indefinite"/>
+        </path>
+        <path d="M -100,60 L 0,80 L 100,60" stroke="#7b68ee" fill="none">
+          <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur="2.5s" repeatCount="indefinite"/>
+        </path>
+        <path d="M -80,140 L 0,160 L 80,140" stroke="#00d4ff" fill="none">
+          <animate attributeName="stroke-opacity" values="0.5;1;0.5" dur="2.8s" repeatCount="indefinite"/>
+        </path>
+        
+        <!-- Nodes -->
+        <circle cx="-80" cy="-20" r="8" fill="#00ffcc" filter="url(#neonGlow)"/>
+        <circle cx="80" cy="-20" r="8" fill="#00ffcc" filter="url(#neonGlow)"/>
+        <circle cx="-100" cy="60" r="8" fill="#7b68ee" filter="url(#neonGlow)"/>
+        <circle cx="100" cy="60" r="8" fill="#7b68ee" filter="url(#neonGlow)"/>
+        <circle cx="-80" cy="140" r="8" fill="#00d4ff" filter="url(#neonGlow)"/>
+        <circle cx="80" cy="140" r="8" fill="#00d4ff" filter="url(#neonGlow)"/>
+        <circle cx="0" cy="200" r="10" fill="#00ffcc" filter="url(#neonGlow)"/>
+      </g>
+      
+      <!-- Data particles flowing -->
+      <circle cx="0" cy="-80" r="5" fill="#00ffcc">
+        <animateMotion dur="3s" repeatCount="indefinite" 
+                       path="M 0,0 Q -80,40 0,120 T 0,240"/>
+        <animate attributeName="opacity" values="0;1;0" dur="3s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="0" cy="-80" r="5" fill="#7b68ee">
+        <animateMotion dur="3s" repeatCount="indefinite" begin="1.5s"
+                       path="M 0,0 Q 80,40 0,120 T 0,240"/>
+        <animate attributeName="opacity" values="0;1;0" dur="3s" repeatCount="indefinite" begin="1.5s"/>
+      </circle>
+    </g>
+    
+    <!-- D - Curved Modern -->
+    <g transform="translate(200, 0)">
+      <path d="M -150,-300 L -150,350 M -150,-300 Q 250,-300 250,25 Q 250,350 -150,350" 
+            stroke="url(#accentGradient)" stroke-width="80" stroke-linecap="round" 
+            fill="none" filter="url(#ultraGlow)"/>
+      <circle cx="-150" cy="-300" r="15" fill="#7b68ee" filter="url(#neonGlow)"/>
+      <circle cx="-150" cy="350" r="15" fill="#00ffcc" filter="url(#neonGlow)"/>
+    </g>
+    
+    <!-- O - Ring Second -->
+    <g transform="translate(950, 0)">
+      <circle cx="0" cy="25" r="320" fill="none" stroke="url(#accentGradient)" 
+              stroke-width="80" filter="url(#ultraGlow)" stroke-dasharray="100 50">
+        <animateTransform attributeName="transform" type="rotate" 
+                          from="0 0 25" to="360 0 25" dur="20s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="0" cy="25" r="240" fill="none" stroke="url(#accentGradient)" 
+              stroke-width="40" opacity="0.5" stroke-dasharray="80 40">
+        <animateTransform attributeName="transform" type="rotate" 
+                          from="360 0 25" to="0 0 25" dur="15s" repeatCount="indefinite"/>
+      </circle>
+      
+      <!-- Center Core -->
+      <circle cx="0" cy="25" r="100" fill="url(#orbGlow)" filter="url(#ultraGlow)">
+        <animate attributeName="r" values="100;120;100" dur="3s" repeatCount="indefinite"/>
+      </circle>
+    </g>
+    
+    <!-- K - Angular Second -->
+    <g transform="translate(1700, 0)">
+      <path d="M -150,-300 L -150,350 M -150,-100 L 200,-300 M -150,150 L 200,350" 
+            stroke="url(#accentGradient)" stroke-width="80" stroke-linecap="round" 
+            stroke-linejoin="round" fill="none" filter="url(#ultraGlow)"/>
+      <circle cx="-150" cy="-300" r="15" fill="#00d4ff" filter="url(#neonGlow)"/>
+      <circle cx="-150" cy="350" r="15" fill="#00ffcc" filter="url(#neonGlow)"/>
+      <circle cx="200" cy="-300" r="15" fill="#7b68ee" filter="url(#neonGlow)"/>
+      <circle cx="200" cy="350" r="15" fill="#00d4ff" filter="url(#neonGlow)"/>
+    </g>
+  </g>
+  
+  <!-- Subtitle -->
+  <g transform="translate(3840, 2350)">
+    <text x="0" y="0" font-family="'Exo 2', 'Orbitron', 'Arial', sans-serif" 
+          font-size="180" fill="url(#accentGradient)" text-anchor="middle" 
+          font-weight="600" letter-spacing="35" filter="url(#glow)">
+      J a v a S c r i p t
+    </text>
+    <text x="0" y="240" font-family="'Rajdhani', 'Arial Black', sans-serif" 
+          font-size="220" fill="#ffffff" text-anchor="middle" 
+          font-weight="700" letter-spacing="40" filter="url(#glow)">
+      SECURITY SCANNER
+    </text>
+    
+    <!-- Decorative underline -->
+    <line x1="-800" y1="280" x2="-400" y2="280" stroke="url(#accentGradient)" 
+          stroke-width="6" stroke-linecap="round" filter="url(#neonGlow)"/>
+    <line x1="400" y1="280" x2="800" y2="280" stroke="url(#accentGradient)" 
+          stroke-width="6" stroke-linecap="round" filter="url(#neonGlow)"/>
+    <circle cx="-800" cy="280" r="8" fill="#00ffcc" filter="url(#neonGlow)"/>
+    <circle cx="800" cy="280" r="8" fill="#7b68ee" filter="url(#neonGlow)"/>
+  </g>
+  
+  <!-- Feature Tags -->
+  <g transform="translate(4040, 2750)">
+    <!-- Tag 1: CONCURRENT (width=360) -->
+    <g transform="translate(-900, 0)">
+      <rect x="-180" y="-35" width="360" height="70" rx="35"
+            fill="#00ffcc15" stroke="#00ffcc" stroke-width="3" filter="url(#neonGlow)"/>
+      <text x="0" y="8" font-family="'Rajdhani', 'Arial', sans-serif" font-size="42"
+            fill="#00ffcc" text-anchor="middle" font-weight="700" letter-spacing="2">CONCURRENT</text>
+    </g>
+
+    <!-- Tag 2: FAST (width=240) -->
+    <g transform="translate(-520, 0)">
+      <rect x="-120" y="-35" width="240" height="70" rx="35"
+            fill="#00d4ff15" stroke="#00d4ff" stroke-width="3" filter="url(#neonGlow)"/>
+      <text x="0" y="8" font-family="'Rajdhani', 'Arial', sans-serif" font-size="42"
+            fill="#00d4ff" text-anchor="middle" font-weight="700" letter-spacing="2">FAST</text>
+    </g>
+
+    <!-- Tag 3: SECURE (width=270) -->
+    <g transform="translate(-185, 0)">
+      <rect x="-135" y="-35" width="270" height="70" rx="35"
+            fill="#7b68ee15" stroke="#7b68ee" stroke-width="3" filter="url(#neonGlow)"/>
+      <text x="0" y="8" font-family="'Rajdhani', 'Arial', sans-serif" font-size="42"
+            fill="#7b68ee" text-anchor="middle" font-weight="700" letter-spacing="2">SECURE</text>
+    </g>
+
+    <!-- Tag 4: DEEP SCAN (width=320) -->
+    <g transform="translate(190, 0)">
+      <rect x="-160" y="-35" width="320" height="70" rx="35"
+            fill="#00ffcc15" stroke="#00ffcc" stroke-width="3" filter="url(#neonGlow)"/>
+      <text x="0" y="8" font-family="'Rajdhani', 'Arial', sans-serif" font-size="42"
+            fill="#00ffcc" text-anchor="middle" font-weight="700" letter-spacing="2">DEEP SCAN</text>
+    </g>
+
+    <!-- Tag 5: SECRET DETECT (width=400) -->
+    <g transform="translate(630, 0)">
+      <rect x="-200" y="-35" width="400" height="70" rx="35"
+            fill="#ff6b3515" stroke="#ff6b35" stroke-width="3" filter="url(#neonGlow)"/>
+      <text x="0" y="8" font-family="'Rajdhani', 'Arial', sans-serif" font-size="42"
+            fill="#ff6b35" text-anchor="middle" font-weight="700" letter-spacing="2">SECRET DETECT</text>
+    </g>
+  </g>
+  
+  <!-- Corner Accents -->
+  <g stroke="url(#accentGradient)" stroke-width="4" fill="none" opacity="0.6">
+    <!-- Top Left -->
+    <path d="M 100,100 L 100,300 M 100,100 L 300,100" filter="url(#neonGlow)"/>
+    <circle cx="100" cy="100" r="12" fill="#00ffcc" filter="url(#neonGlow)"/>
+    
+    <!-- Top Right -->
+    <path d="M 7580,100 L 7580,300 M 7580,100 L 7380,100" filter="url(#neonGlow)"/>
+    <circle cx="7580" cy="100" r="12" fill="#7b68ee" filter="url(#neonGlow)"/>
+    
+    <!-- Bottom Left -->
+    <path d="M 100,3069 L 100,2869 M 100,3069 L 300,3069" filter="url(#neonGlow)"/>
+    <circle cx="100" cy="3069" r="12" fill="#00d4ff" filter="url(#neonGlow)"/>
+    
+    <!-- Bottom Right -->
+    <path d="M 7580,3069 L 7580,2869 M 7580,3069 L 7380,3069" filter="url(#neonGlow)"/>
+    <circle cx="7580" cy="3069" r="12" fill="#00ffcc" filter="url(#neonGlow)"/>
+  </g>
+  
+  <!-- Author Watermark -->
+  <g transform="translate(7500, 3000)">
+    <text x="0" y="0" font-family="'Exo 2', 'Orbitron', 'Rajdhani', sans-serif" 
+          font-size="60" fill="url(#accentGradient)" text-anchor="end" 
+          font-weight="600" letter-spacing="4" filter="url(#glow)" opacity="0.7">
+      Rhyru9
+    </text>
+  </g>
+</svg>
