@@ -1,6 +1,12 @@
+<div align="center">
+
+![KODOK Banner](assets/banner.svg)
+
 # KODOK - JavaScript Security Scanner
 
 A high-performance, concurrent JavaScript security scanner designed to extract endpoints, API paths, and detect sensitive information from JavaScript files.
+
+</div>
 
 ## Overview
 
@@ -408,3 +414,9 @@ KODOK is designed for authorized security testing only. Users are responsible fo
 - Using findings responsibly
 
 **Do not use this tool for unauthorized access or malicious purposes.**
+
+---
+
+<div align="center">
+Made with ❤️ by <a href="https://github.com/rhyru9">Rhyru9</a>
+</div>
