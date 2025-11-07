@@ -1,12 +1,12 @@
 package core
 
 import (
-    "bufio"
     "context"
     "fmt"
-    "os"
+    "net/url"
     "strings"
     "sync"
+    "sync/atomic"
     "time"
 
     "github.com/fatih/color"
@@ -35,11 +35,17 @@ type Processor struct {
     resultsMu   sync.Mutex
     summary     *types.Summary
     
+    // Task tracking - FIX: Track ALL tasks including recursive
+    allTasks sync.WaitGroup
+    
     // Progress tracking
-    progressMu     sync.Mutex
-    processedCount int
+    processedCount int32 // Use atomic
     totalURLs      int
     startTime      time.Time
+    
+    // Context for cancellation
+    ctx    context.Context
+    cancel context.CancelFunc
 }
 
 // NewProcessor creates a new processor
@@ -54,21 +60,24 @@ func NewProcessor(
 ) *Processor {
     
     validator := parse.NewValidator()
+    ctx, cancel := context.WithCancel(context.Background())
     
     return &Processor{
-        config:     config,
-        workerPool: workerPool,
-        dedup:      dedup,
-        fetcher:    fetcher,
-        parser:     parser,
-        scanner:    scanner,
-        output:     output,
-        validator:  validator,
-        resultsChan: make(chan types.ScanResult, 1000),
+        config:      config,
+        workerPool:  workerPool,
+        dedup:       dedup,
+        fetcher:     fetcher,
+        parser:      parser,
+        scanner:     scanner,
+        output:      output,
+        validator:   validator,
+        resultsChan: make(chan types.ScanResult, 10000), // Increase buffer
         results:     make([]types.ScanResult, 0),
         summary: &types.Summary{
             StartTime: time.Now(),
         },
+        ctx:    ctx,
+        cancel: cancel,
     }
 }
 
@@ -80,9 +89,12 @@ func (p *Processor) ProcessURLs(urls []string) error {
     
     color.Cyan("🐸 KODOK - JavaScript Security Scanner")
     color.Cyan("════════════════════════════════════════════")
-    color.Cyan("📊 Starting scan of %d URLs", p.totalURLs)
-    color.Cyan("👷 Workers: %d | Depth: %d | Cache: %d", 
+    color.Cyan("[!] Starting scan of %d URLs", p.totalURLs)
+    color.Cyan("[+] Workers: %d | Depth: %d | Cache: %d", 
         p.config.MaxWorkers, p.config.MaxDepth, p.config.CacheSize)
+    if len(p.config.AllowedDomains) > 0 {
+        color.Cyan("[+] Allowed Domains: %s", strings.Join(p.config.AllowedDomains, ", "))
+    }
     color.Cyan("════════════════════════════════════════════\n")
     
     // Start result collector
@@ -98,23 +110,39 @@ func (p *Processor) ProcessURLs(urls []string) error {
     
     // Submit URLs to worker pool
     submitted := 0
-    for _, url := range urls {
-        url := url // Capture for closure
+    for _, u := range urls {
+        u := u // Capture for closure
+        
+        // FIX: Track this task
+        p.allTasks.Add(1)
         
         if !p.workerPool.Submit(func() {
-            p.processSingleURL(url, 0, "")
+            defer p.allTasks.Done()
+            result := p.processSingleURL(u, 0, "")
+            
+            // Send result safely
+            select {
+            case p.resultsChan <- result:
+            case <-p.ctx.Done():
+                return
+            }
         }) {
-            color.Red("❌ Failed to submit URL to worker pool: %s", url)
+            p.allTasks.Done() // Don't forget to decrement if submit fails
+            color.Red("[x] Failed to submit URL to worker pool: %s", u)
             continue
         }
         submitted++
     }
     
-    color.Green("✅ Submitted %d URLs to worker pool", submitted)
+    color.Green("[+] Submitted %d URLs to worker pool", submitted)
     
-    // Wait for completion
-    p.workerPool.Wait()
-    close(p.resultsChan)
+    // FIX: Wait for ALL tasks (including recursive) then close channel
+    go func() {
+        p.allTasks.Wait()
+        close(p.resultsChan)
+    }()
+    
+    // Wait for collector to finish
     <-collectorDone
     
     // Stop progress reporter
@@ -142,9 +170,7 @@ func (p *Processor) collectResults(done chan struct{}) {
         p.results = append(p.results, result)
         p.resultsMu.Unlock()
         
-        p.progressMu.Lock()
-        p.processedCount++
-        p.progressMu.Unlock()
+        atomic.AddInt32(&p.processedCount, 1)
         
         // Print individual result if verbose or has findings
         if p.config.Verbose || result.PathCount > 0 || result.SecretCount > 0 {
@@ -153,19 +179,28 @@ func (p *Processor) collectResults(done chan struct{}) {
     }
 }
 
-// processSingleURL processes a single URL
-func (p *Processor) processSingleURL(url string, depth int, parent string) types.ScanResult {
+// processSingleURL processes a single URL - ENHANCED for better path extraction
+func (p *Processor) processSingleURL(urlStr string, depth int, parent string) types.ScanResult {
     start := time.Now()
     result := types.ScanResult{
-        URL:       url,
+        URL:       urlStr,
         Depth:     depth,
         ParentURL: parent,
         ScanTime:  start,
-        IsJSFile:  p.isJSFile(url),
+        IsJSFile:  p.isJSFile(urlStr),
+    }
+    
+    // Check context cancellation
+    select {
+    case <-p.ctx.Done():
+        result.Error = "scan cancelled"
+        result.Duration = time.Since(start)
+        return result
+    default:
     }
     
     // Pre-checks
-    if p.dedup.CheckAndAdd(url) {
+    if p.dedup.CheckAndAdd(urlStr) {
         result.Error = "duplicate URL (already processed)"
         result.Duration = time.Since(start)
         return result
@@ -178,25 +213,31 @@ func (p *Processor) processSingleURL(url string, depth int, parent string) types
     }
     
     // Validate URL
-    if !p.validator.IsValid(url) {
+    if !p.validator.IsValid(urlStr) {
         result.Error = "invalid URL format"
         result.Duration = time.Since(start)
         return result
     }
     
     // Fetch content
-    content, statusCode, err := p.fetcher.FetchWithRetry(url, p.config.CustomHeaders)
+    content, statusCode, err := p.fetcher.FetchWithRetry(urlStr, p.config.CustomHeaders)
     if err != nil {
         result.Error = fmt.Sprintf("fetch failed: %s", err)
+        result.StatusCode = statusCode
         result.Duration = time.Since(start)
         return result
     }
     
     result.StatusCode = statusCode
     
-    // Parse paths
+    // ENHANCED: Parse paths with multiple extraction methods
     paths := p.parser.Extract(content)
-    paths = p.filterAndValidatePaths(paths, url)
+    
+    // Additional extraction for concatenated paths and other patterns
+    additionalPaths := p.validator.ExtractURLsFromConcat(content)
+    paths = append(paths, additionalPaths...)
+    
+    paths = p.filterAndValidatePaths(paths, urlStr)
     result.Paths = paths
     result.PathCount = len(paths)
     
@@ -205,15 +246,29 @@ func (p *Processor) processSingleURL(url string, depth int, parent string) types
     result.Secrets = secrets
     result.SecretCount = len(secrets)
     
-    // Deep scan if enabled
+    // Deep scan if enabled - FIX: Use allTasks WaitGroup
     if p.config.DeepScan && depth < p.config.MaxDepth {
-        jsFiles := p.extractJSFiles(paths, url)
+        jsFiles := p.extractJSFiles(paths, urlStr)
         for _, jsFile := range jsFiles {
             jsFile := jsFile
-            p.workerPool.Submit(func() {
-                childResult := p.processSingleURL(jsFile, depth+1, url)
-                p.resultsChan <- childResult
-            })
+            
+            // FIX: Track recursive task
+            p.allTasks.Add(1)
+            
+            if !p.workerPool.Submit(func() {
+                defer p.allTasks.Done()
+                
+                childResult := p.processSingleURL(jsFile, depth+1, urlStr)
+                
+                // Send result safely
+                select {
+                case p.resultsChan <- childResult:
+                case <-p.ctx.Done():
+                    return
+                }
+            }) {
+                p.allTasks.Done() // Don't forget to decrement if submit fails
+            }
         }
     }
     
@@ -221,29 +276,35 @@ func (p *Processor) processSingleURL(url string, depth int, parent string) types
     return result
 }
 
-// filterAndValidatePaths filters and validates extracted paths
+// filterAndValidatePaths filters and validates extracted paths - ENHANCED
 func (p *Processor) filterAndValidatePaths(paths []string, baseURL string) []string {
     filtered := make([]string, 0, len(paths))
     seen := make(map[string]bool)
     
     for _, path := range paths {
-        // Clean and validate
+        // Clean and validate using enhanced validator
         cleanPath := p.validator.Clean(path)
-        if !p.validator.IsValid(cleanPath) {
+        if !p.validator.IsValidPath(cleanPath) {
+            continue
+        }
+        
+        // Make absolute if relative
+        absolutePath := p.makeAbsolute(cleanPath, baseURL)
+        if absolutePath == "" || !p.validator.IsValid(absolutePath) {
             continue
         }
         
         // Apply domain filtering if configured
         if len(p.config.AllowedDomains) > 0 {
-            if !p.isAllowedDomain(cleanPath, baseURL) {
+            if !p.isAllowedDomain(absolutePath, baseURL) {
                 continue
             }
         }
         
         // Deduplicate
-        if !seen[cleanPath] {
-            seen[cleanPath] = true
-            filtered = append(filtered, cleanPath)
+        if !seen[absolutePath] {
+            seen[absolutePath] = true
+            filtered = append(filtered, absolutePath)
         }
     }
     
@@ -256,10 +317,9 @@ func (p *Processor) extractJSFiles(paths []string, baseURL string) []string {
     
     for _, path := range paths {
         if p.isJSFile(path) && !p.dedup.Contains(path) {
-            // Convert relative paths to absolute
-            absolutePath := p.makeAbsolute(path, baseURL)
-            if p.validator.IsValid(absolutePath) {
-                jsFiles = append(jsFiles, absolutePath)
+            // Already absolute from filterAndValidatePaths
+            if p.validator.IsValid(path) {
+                jsFiles = append(jsFiles, path)
             }
         }
     }
@@ -267,59 +327,166 @@ func (p *Processor) extractJSFiles(paths []string, baseURL string) []string {
     return jsFiles
 }
 
-// isJSFile checks if a URL points to a JavaScript file
-func (p *Processor) isJSFile(url string) bool {
-    return strings.HasSuffix(strings.ToLower(url), ".js") ||
-           strings.Contains(strings.ToLower(url), ".js?") ||
-           strings.Contains(strings.ToLower(url), "/js/")
+// isJSFile checks if a URL points to a JavaScript file - ENHANCED
+func (p *Processor) isJSFile(urlStr string) bool {
+    lower := strings.ToLower(urlStr)
+    
+    // Direct JS file extensions
+    if strings.HasSuffix(lower, ".js") ||
+       strings.Contains(lower, ".js?") ||
+       strings.Contains(lower, ".js#") ||
+       strings.Contains(lower, ".js&") {
+        return true
+    }
+    
+    // JS directories and common patterns
+    if strings.Contains(lower, "/js/") ||
+       strings.Contains(lower, "/javascript/") ||
+       strings.Contains(lower, "/script/") ||
+       strings.Contains(lower, ".js.") {
+        return true
+    }
+    
+    // Check content type patterns in URL
+    if strings.Contains(lower, "type=javascript") ||
+       strings.Contains(lower, "script=true") ||
+       strings.Contains(lower, "format=js") {
+        return true
+    }
+    
+    return false
 }
 
-// isAllowedDomain checks if a URL is in allowed domains
-func (p *Processor) isAllowedDomain(url, baseURL string) bool {
+// isAllowedDomain checks if a URL is in allowed domains with wildcard support - ENHANCED
+func (p *Processor) isAllowedDomain(urlStr, baseURL string) bool {
     if len(p.config.AllowedDomains) == 0 {
         return true
     }
     
-    for _, domain := range p.config.AllowedDomains {
-        if strings.Contains(url, domain) {
+    // Parse URL to get host
+    parsedURL, err := url.Parse(urlStr)
+    if err != nil {
+        // If can't parse, assume it's relative path (allowed)
+        return true
+    }
+    
+    if parsedURL.Host == "" {
+        // Relative path, allowed
+        return true
+    }
+    
+    host := p.validator.NormalizeDomain(parsedURL.Host)
+    
+    // Check against allowed domains with wildcard support
+    for _, domainPattern := range p.config.AllowedDomains {
+        domainPattern = p.validator.NormalizeDomain(domainPattern)
+        
+        if p.matchesDomainPattern(host, domainPattern) {
             return true
         }
     }
     
-    // Allow relative paths
-    return !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://")
+    return false
 }
 
-// makeAbsolute converts relative paths to absolute URLs
-func (p *Processor) makeAbsolute(path, baseURL string) string {
-    if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
-        return path
+// matchesDomainPattern checks if host matches domain pattern with wildcard support - ENHANCED
+func (p *Processor) matchesDomainPattern(host, pattern string) bool {
+    // Exact match
+    if host == pattern {
+        return true
     }
     
-    if strings.HasPrefix(path, "//") {
-        return "https:" + path
+    // Wildcard pattern: *.example.com
+    if strings.HasPrefix(pattern, "*.") {
+        suffix := pattern[2:] // Remove "*."
+        
+        // ENHANCED: Wildcard also matches base domain
+        // *.example.com will match both "example.com" AND "api.example.com"
+        if host == suffix {
+            return true
+        }
+        
+        // Ensure the host ends with the suffix
+        if strings.HasSuffix(host, suffix) {
+            // Check domain boundary to prevent false positives
+            // e.g., host = "api.example.com", suffix = "example.com"
+            // We need exactly one dot before the suffix or it's the full host
+            if len(host) == len(suffix) {
+                return true // Exact match (already handled above, but keep for safety)
+            }
+            
+            // Check if the character before suffix is a dot
+            if host[len(host)-len(suffix)-1] == '.' {
+                // CRITICAL: Additional safety check
+                // Ensure we're not matching "evilexample.com" when pattern is "*.example.com"
+                
+                // OPTION 1: Single-level subdomain only (strict)
+                // Uncomment this if you want *.example.ac.id to ONLY match "sub.example.ac.id"
+                // but NOT "a.b.example.ac.id"
+                /*
+                remaining := host[:len(host)-len(suffix)-1]
+                if !strings.Contains(remaining, ".") {
+                    return true
+                }
+                */
+                
+                // OPTION 2: Multi-level subdomain allowed (permissive)
+                // This allows *.example.ac.id to match both:
+                // - "sub.example.ac.id" 
+                // - "a.b.example.ac.id" 
+                // But still blocks "fakeexample.ac.id" 
+                return true
+            }
+        }
+        return false
     }
     
-    if strings.HasPrefix(path, "/") {
-        // Extract base domain from baseURL
-        if strings.HasPrefix(baseURL, "http") {
-            parts := strings.SplitN(baseURL, "/", 4)
-            if len(parts) >= 3 {
-                return parts[0] + "//" + parts[2] + path
+    // ENHANCED: Subdomain matching without wildcard
+    // But be careful: we don't want "evilexample.com" to match "example.com"
+    // Check if pattern appears as a full domain part
+    if strings.Contains(host, pattern) {
+        parts := strings.Split(host, ".")
+        for i := 0; i < len(parts); i++ {
+            if strings.Join(parts[i:], ".") == pattern {
+                return true
             }
         }
     }
     
-    // For relative paths, try to resolve against baseURL directory
-    if strings.HasPrefix(baseURL, "http") && !strings.HasPrefix(path, "/") {
-        lastSlash := strings.LastIndex(baseURL, "/")
-        if lastSlash > 8 { // After https://
-            baseDir := baseURL[:lastSlash+1]
-            return baseDir + path
-        }
+    return false
+}
+
+// makeAbsolute converts relative paths to absolute URLs - IMPROVED
+func (p *Processor) makeAbsolute(path, baseURL string) string {
+    // Already absolute
+    if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
+        return path
     }
     
-    return path
+    // Protocol-relative
+    if strings.HasPrefix(path, "//") {
+        // Use the same protocol as baseURL
+        if strings.HasPrefix(baseURL, "https://") {
+            return "https:" + path
+        }
+        return "http:" + path
+    }
+    
+    // Parse base URL
+    base, err := url.Parse(baseURL)
+    if err != nil {
+        return ""
+    }
+    
+    // Parse relative path
+    ref, err := url.Parse(path)
+    if err != nil {
+        return ""
+    }
+    
+    // Resolve reference
+    resolved := base.ResolveReference(ref)
+    return resolved.String()
 }
 
 // printResult prints an individual scan result
@@ -327,28 +494,35 @@ func (p *Processor) printResult(result types.ScanResult) {
     depthPrefix := strings.Repeat("  ", result.Depth)
     
     if result.Error != "" {
-        color.Red("%s❌ %s (depth: %d) - %s", depthPrefix, result.URL, result.Depth, result.Error)
+        color.Red("%s[x] %s (depth: %d) - %s", depthPrefix, result.URL, result.Depth, result.Error)
         return
     }
     
-    color.Cyan("%s🔍 %s (depth: %d, time: %v)", depthPrefix, result.URL, result.Depth, result.Duration.Round(time.Millisecond))
+    color.Cyan("%s[?] %s (depth: %d, time: %v, status: %d)", 
+        depthPrefix, result.URL, result.Depth, result.Duration.Round(time.Millisecond), result.StatusCode)
     
     if result.PathCount > 0 {
-        color.Blue("%s📂 Paths Found: %d", depthPrefix, result.PathCount)
-        for _, path := range result.Paths {
-            marker := "  →"
-            if p.isJSFile(path) {
-                marker = "  → [JS]"
+        color.Blue("%s[!] Paths Found: %d", depthPrefix, result.PathCount)
+        if p.config.Verbose {
+            for i, path := range result.Paths {
+                if i >= 10 { // Limit output
+                    color.White("%s  ... and %d more", depthPrefix, result.PathCount-10)
+                    break
+                }
+                marker := "  →"
+                if p.isJSFile(path) {
+                    marker = "  → [JS]"
+                }
+                color.White("%s%s %s", depthPrefix, marker, path)
             }
-            color.White("%s%s %s", depthPrefix, marker, path)
         }
     }
     
     if result.SecretCount > 0 {
-        color.Red("%s🔑 Secrets Found: %d", depthPrefix, result.SecretCount)
+        color.Red("%s[+] Secrets Found: %d", depthPrefix, result.SecretCount)
         for _, secret := range result.Secrets {
             color.Red("%s  ⚠ %s: %s", depthPrefix, secret.Type, secret.Value)
-            if secret.Context != "" {
+            if secret.Context != "" && p.config.Verbose {
                 color.Yellow("%s    Context: %s", depthPrefix, secret.Context)
             }
         }
@@ -369,16 +543,14 @@ func (p *Processor) reportProgress(done chan struct{}) {
     for {
         select {
         case <-ticker.C:
-            p.progressMu.Lock()
-            processed := p.processedCount
+            processed := atomic.LoadInt32(&p.processedCount)
             total := p.totalURLs
             elapsed := time.Since(p.startTime)
-            p.progressMu.Unlock()
             
             if total > 0 {
                 percent := float64(processed) / float64(total) * 100
-                color.Yellow("📊 Progress: %d/%d (%.1f%%) | Elapsed: %v", 
-                    processed, total, percent, elapsed.Round(time.Second))
+                color.Yellow("Progress: %d/%d (%.1f%%) | Elapsed: %v | Queue: %d", 
+                    processed, total, percent, elapsed.Round(time.Second), p.workerPool.QueuedTasks())
             }
         case <-done:
             return
@@ -416,101 +588,22 @@ func (p *Processor) calculateSummary() {
 // PrintSummary prints the final summary
 func (p *Processor) PrintSummary() {
     color.Cyan("\n════════════════════════════════════════════")
-    color.Cyan("🎯 Final Summary")
+    color.Cyan("[+] Final Summary")
     color.Cyan("════════════════════════════════════════════")
-    color.Green("  ✅ Success: %d", p.summary.SuccessCount)
-    color.Red("  ❌ Failed: %d", p.summary.FailedCount)
+    color.Green("  [+]Success: %d", p.summary.SuccessCount)
+    color.Red("  [x] Failed: %d", p.summary.FailedCount)
     color.Blue("  📦 Total Paths: %d", p.summary.TotalPaths)
-    color.Red("  🔐 Total Secrets: %d", p.summary.TotalSecrets)
+    color.Red("  [!] Total Secrets: %d", p.summary.TotalSecrets)
     color.Yellow("  ⏱  Total Time: %v", p.summary.TotalTime.Round(time.Millisecond))
     color.Cyan("════════════════════════════════════════════")
     
-    // Print output file locations
-    color.Green("Results saved to: %s.json and %s.txt", p.config.OutputFile, p.config.OutputFile)
+    jsonFile, txtFile := p.output.GetFilenames()
+    color.Green("\nResults saved to:")
+    color.Green("  - JSON: %s", jsonFile)
+    color.Green("  - TXT:  %s", txtFile)
 }
 
-// GetResults returns the scan results
-func (p *Processor) GetResults() []types.ScanResult {
-    p.resultsMu.Lock()
-    defer p.resultsMu.Unlock()
-    return p.results
-}
-
-// GetSummary returns the scan summary
-func (p *Processor) GetSummary() *types.Summary {
-    return p.summary
-}
-
-// readURLsFromFile reads URLs from a file
-func ReadURLsFromFile(filename string) ([]string, error) {
-    file, err := os.Open(filename)
-    if err != nil {
-        return nil, fmt.Errorf("failed to open file: %w", err)
-    }
-    defer file.Close()
-    
-    var urls []string
-    scanner := bufio.NewScanner(file)
-    
-    for scanner.Scan() {
-        url := strings.TrimSpace(scanner.Text())
-        if url != "" && !strings.HasPrefix(url, "#") {
-            urls = append(urls, url)
-        }
-    }
-    
-    if err := scanner.Err(); err != nil {
-        return nil, fmt.Errorf("error reading file: %w", err)
-    }
-    
-    return urls, nil
-}
-
-// GetURLsFromInput gets URLs from various input sources
-func GetURLsFromInput(config *types.Config) ([]string, error) {
-    var urls []string
-    
-    // Check if we're reading from stdin
-    stat, _ := os.Stdin.Stat()
-    if (stat.Mode() & os.ModeCharDevice) == 0 {
-        // Reading from stdin
-        scanner := bufio.NewScanner(os.Stdin)
-        for scanner.Scan() {
-            url := strings.TrimSpace(scanner.Text())
-            if url != "" {
-                urls = append(urls, url)
-            }
-        }
-        if err := scanner.Err(); err != nil {
-            return nil, fmt.Errorf("error reading from stdin: %w", err)
-        }
-        color.Green("📥 Read %d URLs from stdin", len(urls))
-    } else {
-        // Check for file input
-        if config.OutputFile != "" {
-            fileURLs, err := ReadURLsFromFile(config.OutputFile)
-            if err == nil {
-                urls = append(urls, fileURLs...)
-            }
-        }
-        
-        // If no URLs found, show usage
-        if len(urls) == 0 {
-            return nil, fmt.Errorf("no URLs provided. Use -u for single URL or -f for file, or pipe URLs to stdin")
-        }
-    }
-    
-    // Deduplicate input URLs
-    seen := make(map[string]bool)
-    uniqueURLs := make([]string, 0, len(urls))
-    
-    for _, url := range urls {
-        if !seen[url] {
-            seen[url] = true
-            uniqueURLs = append(uniqueURLs, url)
-        }
-    }
-    
-    color.Green("📝 Processing %d unique URLs", len(uniqueURLs))
-    return uniqueURLs, nil
+// Cancel cancels the scanning process
+func (p *Processor) Cancel() {
+    p.cancel()
 }

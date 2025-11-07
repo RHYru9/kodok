@@ -33,7 +33,7 @@ func NewWorkerPool(workers int) *WorkerPool {
 }
 
 // Start begins processing tasks
-func (wp *WorkerPool) Start() {
+func (wp *WorkerPool) Start(ctx context.Context) {
     wp.mu.Lock()
     defer wp.mu.Unlock()
     
@@ -41,7 +41,7 @@ func (wp *WorkerPool) Start() {
         return
     }
     
-    wp.ctx, wp.cancel = context.WithCancel(context.Background())
+    wp.ctx, wp.cancel = context.WithCancel(ctx)
     wp.started = true
     
     // Start worker goroutines
@@ -76,25 +76,27 @@ func (wp *WorkerPool) worker() {
 // Submit adds a task to the queue
 func (wp *WorkerPool) Submit(task func()) bool {
     wp.mu.Lock()
-    defer wp.mu.Unlock()
+    started := wp.started
+    ctx := wp.ctx
+    wp.mu.Unlock()
     
-    if !wp.started {
+    if !started {
         return false
     }
     
     select {
     case wp.taskQueue <- task:
         return true
-    case <-wp.ctx.Done():
+    case <-ctx.Done():
         return false
-    default:
+    case <-time.After(100 * time.Millisecond):
         // Queue is full, try with timeout
         select {
         case wp.taskQueue <- task:
             return true
-        case <-time.After(100 * time.Millisecond):
+        case <-ctx.Done():
             return false
-        case <-wp.ctx.Done():
+        default:
             return false
         }
     }
@@ -129,8 +131,7 @@ func (wp *WorkerPool) Stop() {
     // Close task queue
     close(wp.taskQueue)
     
-    // Wait for workers to finish
-    wp.wg.Wait()
+    // Wait for workers to finish (already done via wg.Wait() in caller)
     wp.started = false
 }
 
@@ -148,4 +149,11 @@ func (wp *WorkerPool) ActiveWorkers() int {
 // QueuedTasks returns the number of queued tasks
 func (wp *WorkerPool) QueuedTasks() int {
     return len(wp.taskQueue)
+}
+
+// Context returns the worker pool context
+func (wp *WorkerPool) Context() context.Context {
+    wp.mu.Lock()
+    defer wp.mu.Unlock()
+    return wp.ctx
 }

@@ -3,8 +3,9 @@ package fetch
 import (
     "context"
     "fmt"
-    "io"
+    "net"
     "net/http"
+    "net/url"
     "strings"
     "time"
 )
@@ -42,7 +43,12 @@ type FetchResult struct {
 }
 
 // FetchWithRetry fetches a URL with retry logic
-func (f *Fetcher) FetchWithRetry(url string, customHeaders map[string]string) (string, int, error) {
+func (f *Fetcher) FetchWithRetry(urlStr string, customHeaders map[string]string) (string, int, error) {
+    // SSRF Protection: Validate URL before fetching
+    if err := f.validateURL(urlStr); err != nil {
+        return "", 0, fmt.Errorf("SSRF protection: %w", err)
+    }
+    
     var lastErr error
     
     for attempt := 0; attempt <= f.retryAttempts; attempt++ {
@@ -52,7 +58,7 @@ func (f *Fetcher) FetchWithRetry(url string, customHeaders map[string]string) (s
             time.Sleep(backoff)
         }
         
-        content, statusCode, err := f.fetch(url, customHeaders)
+        content, statusCode, err := f.fetch(urlStr, customHeaders)
         if err == nil {
             return content, statusCode, nil
         }
@@ -69,11 +75,11 @@ func (f *Fetcher) FetchWithRetry(url string, customHeaders map[string]string) (s
 }
 
 // fetch performs a single HTTP request
-func (f *Fetcher) fetch(url string, customHeaders map[string]string) (string, int, error) {
+func (f *Fetcher) fetch(urlStr string, customHeaders map[string]string) (string, int, error) {
     ctx, cancel := context.WithTimeout(context.Background(), f.client.Timeout)
     defer cancel()
     
-    req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+    req, err := http.NewRequestWithContext(ctx, "GET", urlStr, nil)
     if err != nil {
         return "", 0, fmt.Errorf("creating request: %w", err)
     }
@@ -115,6 +121,147 @@ func (f *Fetcher) fetch(url string, customHeaders map[string]string) (string, in
     return content, resp.StatusCode, nil
 }
 
+// NEW: validateURL validates URL against SSRF attacks
+func (f *Fetcher) validateURL(urlStr string) error {
+    // Parse URL
+    parsedURL, err := url.Parse(urlStr)
+    if err != nil {
+        return fmt.Errorf("invalid URL: %w", err)
+    }
+    
+    // Check scheme
+    if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+        return fmt.Errorf("unsupported scheme: %s (only http/https allowed)", parsedURL.Scheme)
+    }
+    
+    // Extract host (without port)
+    host := parsedURL.Hostname()
+    if host == "" {
+        return fmt.Errorf("empty host")
+    }
+    
+    // Check if host is safe
+    if !isSafeHost(host) {
+        return fmt.Errorf("blocked host: %s (internal/private address)", host)
+    }
+    
+    return nil
+}
+
+// NEW: isSafeHost checks if a host is safe to connect to (SSRF protection)
+func isSafeHost(host string) bool {
+    // Normalize host
+    host = strings.ToLower(strings.TrimSpace(host))
+    
+    // Block dangerous domains/IPs
+    dangerousDomains := []string{
+        "localhost",
+        "127.0.0.1",
+        "::1",
+        "0.0.0.0",
+        "169.254.169.254",           // AWS metadata
+        "metadata.google.internal",  // GCP metadata
+        "metadata.azure.com",        // Azure metadata
+        "kubernetes.default.svc",    // Kubernetes API
+        "rancher-metadata",          // Rancher metadata
+    }
+    
+    for _, dangerous := range dangerousDomains {
+        if host == dangerous {
+            return false
+        }
+    }
+    
+    // Check for IP address
+    if ip := net.ParseIP(host); ip != nil {
+        // Block loopback addresses (127.0.0.0/8, ::1)
+        if ip.IsLoopback() {
+            return false
+        }
+        
+        // Block private addresses (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, fc00::/7)
+        if ip.IsPrivate() {
+            return false
+        }
+        
+        // Block link-local addresses (169.254.0.0/16, fe80::/10)
+        if ip.IsLinkLocalUnicast() {
+            return false
+        }
+        
+        // Block multicast addresses
+        if ip.IsMulticast() {
+            return false
+        }
+        
+        // Block unspecified addresses (0.0.0.0, ::)
+        if ip.IsUnspecified() {
+            return false
+        }
+        
+        // ENHANCED: Block additional dangerous IP ranges
+        // Block 0.0.0.0/8 (current network)
+        if ip.To4() != nil && ip.To4()[0] == 0 {
+            return false
+        }
+        
+        // Block 100.64.0.0/10 (Carrier-grade NAT)
+        if ip.To4() != nil && ip.To4()[0] == 100 && (ip.To4()[1]&0xC0) == 64 {
+            return false
+        }
+        
+        // Block 192.0.0.0/24 (IETF Protocol Assignments)
+        if ip.To4() != nil && ip.To4()[0] == 192 && ip.To4()[1] == 0 && ip.To4()[2] == 0 {
+            return false
+        }
+        
+        // Block 192.0.2.0/24 (TEST-NET-1)
+        if ip.To4() != nil && ip.To4()[0] == 192 && ip.To4()[1] == 0 && ip.To4()[2] == 2 {
+            return false
+        }
+        
+        // Block 198.18.0.0/15 (Benchmarking)
+        if ip.To4() != nil && ip.To4()[0] == 198 && (ip.To4()[1] == 18 || ip.To4()[1] == 19) {
+            return false
+        }
+        
+        // Block 198.51.100.0/24 (TEST-NET-2)
+        if ip.To4() != nil && ip.To4()[0] == 198 && ip.To4()[1] == 51 && ip.To4()[2] == 100 {
+            return false
+        }
+        
+        // Block 203.0.113.0/24 (TEST-NET-3)
+        if ip.To4() != nil && ip.To4()[0] == 203 && ip.To4()[1] == 0 && ip.To4()[2] == 113 {
+            return false
+        }
+        
+        // Block 240.0.0.0/4 (Reserved)
+        if ip.To4() != nil && (ip.To4()[0]&0xF0) == 240 {
+            return false
+        }
+    }
+    
+    // ENHANCED: Block suspicious domain patterns
+    suspiciousPatterns := []string{
+        ".local",
+        ".internal",
+        ".localhost",
+        ".localdomain",
+        ".lan",
+        ".home",
+        ".corp",
+        ".intranet",
+    }
+    
+    for _, pattern := range suspiciousPatterns {
+        if strings.HasSuffix(host, pattern) {
+            return false
+        }
+    }
+    
+    return true
+}
+
 // isPermanentError checks if an error is permanent (should not retry)
 func (f *Fetcher) isPermanentError(err error) bool {
     if err == nil {
@@ -132,6 +279,8 @@ func (f *Fetcher) isPermanentError(err error) bool {
         "unsupported protocol scheme",
         "no such host",
         "certificate",
+        "SSRF protection", // Don't retry SSRF-blocked URLs
+        "blocked host",    //NEW
     }
     
     for _, pattern := range permanentPatterns {

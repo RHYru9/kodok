@@ -2,9 +2,9 @@ package fetch
 
 import (
     "compress/gzip"
+    "fmt"
     "io"
     "net/http"
-    "strings"
 )
 
 // ContentFilter handles content filtering and processing
@@ -60,7 +60,9 @@ func (f *ContentFilter) isBinary(content string) bool {
     
     // Check for null bytes and low percentage of printable characters
     printable := 0
-    for i := 0; i < len(content) && i < 1000; i++ {
+    sampleSize := min(len(content), 1000)
+    
+    for i := 0; i < sampleSize; i++ {
         if content[i] == 0 {
             return true // Null byte found
         }
@@ -70,7 +72,6 @@ func (f *ContentFilter) isBinary(content string) bool {
     }
     
     // If less than 80% of first 1000 chars are printable, consider it binary
-    sampleSize := min(len(content), 1000)
     if float64(printable)/float64(sampleSize) < 0.8 {
         return true
     }

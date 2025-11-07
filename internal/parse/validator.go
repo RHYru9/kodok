@@ -10,19 +10,24 @@ import (
 type Validator struct {
     validationRegex *regexp.Regexp
     domainRegex     *regexp.Regexp
+    pathRegex       *regexp.Regexp
 }
 
 // NewValidator creates a new URL validator
 func NewValidator() *Validator {
-    // Validation pattern for URLs and paths
+    // Enhanced validation pattern for URLs and paths
     validationPattern := `^(https?://[^\s<>]+|(?:/|\.\.?/)[^\s<>,;|*()\[\]{}\\]+)$`
     
     // Domain extraction pattern
     domainPattern := `^(?:https?://)?([^/:]+)`
     
+    // Path validation pattern (more permissive)
+    pathPattern := `^((?:https?://[^\s<>]+)|(?:/|\.\.?/|\./?)[^\s<>,;|*()\[\]{}\\]+)$`
+    
     return &Validator{
         validationRegex: regexp.MustCompile(validationPattern),
         domainRegex:     regexp.MustCompile(domainPattern),
+        pathRegex:       regexp.MustCompile(pathPattern),
     }
 }
 
@@ -68,16 +73,48 @@ func (v *Validator) IsValid(rawURL string) bool {
     return true
 }
 
+// IsValidPath validates if a string is a valid path (more permissive than full URL)
+func (v *Validator) IsValidPath(path string) bool {
+    if path == "" {
+        return false
+    }
+    
+    // Length check
+    if len(path) < 1 || len(path) > 2000 {
+        return false
+    }
+    
+    // Check for suspicious patterns
+    if v.containsSuspiciousPatterns(path) {
+        return false
+    }
+    
+    // ENHANCED: membolehkan query parameters and fragments
+    // Basic path pattern validation (more permissive)
+    if !v.pathRegex.MatchString(path) {
+        return false
+    }
+    
+    // For relative paths, basic validation
+    if strings.HasPrefix(path, "/") || strings.HasPrefix(path, "./") || strings.HasPrefix(path, "../") {
+        return !v.containsSuspiciousPatterns(path)
+    }
+    
+    // For absolute URLs, use normal validation
+    return v.IsValid(path)
+}
+
+// FIXED: Clean method - preserve query and fragment
 // Clean cleans and normalizes a URL
 func (v *Validator) Clean(rawURL string) string {
     url := strings.TrimSpace(rawURL)
     
-    // Remove common trailing issues
-    url = strings.TrimRight(url, "\\")
-    url = strings.TrimRight(url, "/")
-    url = strings.TrimRight(url, ",")
-    url = strings.TrimRight(url, ";")
-    url = strings.TrimRight(url, ".")
+    // FIXED: Jangan potong karakter valid seperti ?, &, =, #
+    // Hanya trim karakter yang PASTI tidak valid di akhir URL
+    url = strings.TrimRightFunc(url, func(r rune) bool {
+        return r == '\\' || r == ',' || r == ';' || r == ')' || 
+               r == ']' || r == '}' || r == ' ' || r == '\t'
+    })
     
     // Normalize protocol-relative URLs
     if strings.HasPrefix(url, "//") {
@@ -96,6 +133,30 @@ func (v *Validator) ExtractDomain(rawURL string) string {
     return ""
 }
 
+// ExtractURLsFromConcat attempts to extract URLs from concatenated strings
+func (v *Validator) ExtractURLsFromConcat(content string) []string {
+    patterns := []*regexp.Regexp{
+        regexp.MustCompile(`["'` + "`" + `]\s*\+\s*["'` + "`" + `]([^"']+)`),
+        regexp.MustCompile(`\b(?:url|path|endpoint|api|src|href)\s*=\s*["'` + "`" + `]([^"']+)["'` + "`" + `]`),
+        regexp.MustCompile(`(?:fetch|axios|ajax|XMLHttpRequest)\(['"` + "`" + `]([^'"` + "`" + `]+)`),
+    }
+    
+    var urls []string
+    for _, pattern := range patterns {
+        matches := pattern.FindAllStringSubmatch(content, -1)
+        for _, match := range matches {
+            if len(match) > 1 && v.IsValidPath(match[1]) {
+                cleaned := v.Clean(match[1])
+                if cleaned != "" {
+                    urls = append(urls, cleaned)
+                }
+            }
+        }
+    }
+    
+    return urls
+}
+
 // containsSuspiciousPatterns checks for potentially malicious patterns
 func (v *Validator) containsSuspiciousPatterns(url string) bool {
     suspiciousPatterns := []string{
@@ -110,10 +171,19 @@ func (v *Validator) containsSuspiciousPatterns(url string) bool {
         "}}",
         "../../../", // Excessive path traversal
         "//..",     // Double dot patterns
+        "<!--",
+        "-->",
+        "eval(",
+        "document.cookie",
+        "localStorage",
+        "sessionStorage",
+        "window.location",
+        "document.domain",
     }
     
+    lowerURL := strings.ToLower(url)
     for _, pattern := range suspiciousPatterns {
-        if strings.Contains(strings.ToLower(url), pattern) {
+        if strings.Contains(lowerURL, pattern) {
             return true
         }
     }
@@ -131,4 +201,14 @@ func (v *Validator) IsSameDomain(url1, url2 string) bool {
     }
     
     return domain1 == domain2
+}
+
+// NormalizeDomain normalizes domain for comparison
+func (v *Validator) NormalizeDomain(domain string) string {
+    domain = strings.ToLower(strings.TrimSpace(domain))
+    // Remove www. prefix for normalization
+    if strings.HasPrefix(domain, "www.") {
+        domain = domain[4:]
+    }
+    return domain
 }
