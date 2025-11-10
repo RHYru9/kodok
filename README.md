@@ -94,7 +94,7 @@ cat urls.txt | kodok \
   -deep \
   -depth 3 \
   -workers 15 \
-  -ad "*.itb.ac.id,*.ui.ac.id" \
+  -ad "*.example.xy.z,*.domains.xy.z" \
   -timeout 45 \
   -o university_scan
 ```
@@ -134,9 +134,9 @@ Matches: `api.example.com`, `sub.example.com`, `a.b.example.com`
 
 ### Multiple Domain Patterns
 ```bash
-kodok -f urls.txt -ad "*.itb.ac.id,*.ui.ac.id,example.com"
+kodok -f urls.txt -ad "*.example.xy.z,*.domains.xy.z,example.com"
 ```
-Matches: All subdomains of `itb.ac.id` and `ui.ac.id`, plus `example.com`
+Matches: All subdomains of `example.xy.z` and `domains.xy.z`, plus `example.com`
 
 ### Important Notes
 - Wildcard `*.example.com` also matches the base domain `example.com`
