@@ -7,41 +7,34 @@ import (
 
 // Extractor extracts URLs and paths from JavaScript content
 type Extractor struct {
-    extractionRegex     *regexp.Regexp
-    templateRegex       *regexp.Regexp
-    jsFileRegex         *regexp.Regexp
-    commonPathPattern   *regexp.Regexp
-    objPropertyRegex    *regexp.Regexp
-    concatRegex         *regexp.Regexp
-    functionCallRegex   *regexp.Regexp
-    heuristicPathRegex  *regexp.Regexp
-    objInFunctionRegex  *regexp.Regexp
+    extractionRegex    *regexp.Regexp
+    templateRegex      *regexp.Regexp
+    objPropertyRegex   *regexp.Regexp
+    concatRegex        *regexp.Regexp
+    functionCallRegex  *regexp.Regexp
+    heuristicPathRegex *regexp.Regexp
+    objInFunctionRegex *regexp.Regexp
 }
 
 // NewExtractor creates a new extractor
 func NewExtractor() *Extractor {
     extractionPattern := `(?:"|'|` + "`" + `)((?:https?:\/\/[^"'\s<>` + "`" + `]+|(?:\/|\.\.?\/)[^"'\s<>,;|*()\[\]{}\\` + "`" + `]*))(?:"|'|` + "`" + `)`
-    
+
     templatePattern := "`" + `([^` + "`" + `{]*[a-zA-Z0-9/._\-?=&%#]+)` + "`"
-    
-    jsFilePattern := `\.js(?:\?[^"'\s` + "`" + `]*)?(?:"|'|` + "`" + `)`
-    
+
     heuristicPattern := `(\/(?:api|v[0-9]+|rest|graphql|oauth|oauth2|auth|login|logout|register|user|admin|config|internal|proxy|service|data|upload|download|file|assets|static|cdn|_next|wp-json|webhook|billing|payment|checkout|callback|sso|identity|gateway|microsvc|health|metrics|docs|swagger|openapi|debug|test|staging|dev|beta|alpha)\/[^\s"'` + "`" + `<>{}\[\]()]*)`
-    
+
     objPropertyPattern := `(?:path|url|endpoint|api|uri|route|link|target|dest|source|src|href|action|formAction|redirect|callback|next|returnTo|continue|goto|baseUrl|baseURL|apiUrl|apiURL|apiPath|serviceUrl|serviceURL|graphqlUrl|graphqlURL|restUrl|restURL|config|settings|options|params|query|payload|to|hrefTo|as|pathname|search|hash|resource|objectUrl|objectURL|dataUrl|dataURL|fileUrl|fileURL|loc|location|addr|address|pathName)\s*[:=]\s*["'` + "`" + `]([^"'\s` + "`" + `<>]*)["'` + "`" + `]`
-    
+
     functionCallPattern := `(?i)\b(?:fetch|axios\.(?:get|post|put|patch|delete|head|options|request)|api\.(?:get|post|put|patch|delete|head|options|request)|\$\.get|\$\.post|\$\.ajax|jQuery\.get|jQuery\.post|jQuery\.ajax|ky\.(?:get|post|put|patch|delete|head|options)|got\.(?:get|post|put|patch|delete|head|options)|request\.(?:get|post|put|patch|delete|head|options)|superagent\.(?:get|post|put|patch|delete|head|options)|http(?:Client|Service|Client|Api|Request)?\.(?:get|post|put|patch|delete|head|options|request)|(?:call|send|make|execute)(?:Api|Request|Http)?|(?:load|send|request|call)\w*|navigate|router\.push|window\.location\.assign)\s*\(\s*["'` + "`" + `]([^"'\s` + "`" + `<>]*)["'` + "`" + `]`
-    
+
     objInFunctionPattern := `\b(?:pathname|path|to|href|url)\s*:\s*["'` + "`" + `]([^"'` + "`" + `\s<>{}]+)["'` + "`" + `]`
-    
-    // Concatenation patterns
+
     concatPattern := `["'` + "`" + `]\s*\+\s*["'` + "`" + `]([^"']+)["'` + "`" + `]|\b(?:url|path|endpoint)\s*=\s*["'` + "`" + `]([^"']+)["'` + "`" + `]`
-    
+
     return &Extractor{
         extractionRegex:    regexp.MustCompile(extractionPattern),
         templateRegex:      regexp.MustCompile(templatePattern),
-        jsFileRegex:        regexp.MustCompile(jsFilePattern),
-        commonPathPattern:  regexp.MustCompile(heuristicPattern),
         objPropertyRegex:   regexp.MustCompile(objPropertyPattern),
         functionCallRegex:  regexp.MustCompile(functionCallPattern),
         heuristicPathRegex: regexp.MustCompile(heuristicPattern),
@@ -201,15 +194,3 @@ func (e *Extractor) cleanURL(url string) string {
     return url
 }
 
-// IsJSFile checks if a URL points to a JavaScript file
-func (e *Extractor) IsJSFile(url string) bool {
-    lower := strings.ToLower(url)
-    return strings.HasSuffix(lower, ".js") ||
-           strings.Contains(lower, ".js?") ||
-           strings.Contains(lower, "/js/") ||
-           strings.Contains(lower, ".js#") ||
-           strings.Contains(lower, ".js&") ||
-           strings.Contains(lower, ".js%") ||
-           (strings.Contains(lower, "javascript") || strings.Contains(lower, "script")) &&
-           (strings.Contains(lower, "src=") || strings.Contains(lower, "href="))
-}

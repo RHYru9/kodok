@@ -11,6 +11,7 @@ type Validator struct {
     validationRegex *regexp.Regexp
     domainRegex     *regexp.Regexp
     pathRegex       *regexp.Regexp
+    concatPatterns  []*regexp.Regexp
 }
 
 // NewValidator creates a new URL validator
@@ -28,6 +29,11 @@ func NewValidator() *Validator {
         validationRegex: regexp.MustCompile(validationPattern),
         domainRegex:     regexp.MustCompile(domainPattern),
         pathRegex:       regexp.MustCompile(pathPattern),
+        concatPatterns: []*regexp.Regexp{
+            regexp.MustCompile(`["'` + "`" + `]\s*\+\s*["'` + "`" + `]([^"']+)`),
+            regexp.MustCompile(`\b(?:url|path|endpoint|api|src|href)\s*=\s*["'` + "`" + `]([^"']+)["'` + "`" + `]`),
+            regexp.MustCompile(`(?:fetch|axios|ajax|XMLHttpRequest)\(['"` + "`" + `]([^'"` + "`" + `]+)`),
+        },
     }
 }
 
@@ -135,14 +141,8 @@ func (v *Validator) ExtractDomain(rawURL string) string {
 
 // ExtractURLsFromConcat attempts to extract URLs from concatenated strings
 func (v *Validator) ExtractURLsFromConcat(content string) []string {
-    patterns := []*regexp.Regexp{
-        regexp.MustCompile(`["'` + "`" + `]\s*\+\s*["'` + "`" + `]([^"']+)`),
-        regexp.MustCompile(`\b(?:url|path|endpoint|api|src|href)\s*=\s*["'` + "`" + `]([^"']+)["'` + "`" + `]`),
-        regexp.MustCompile(`(?:fetch|axios|ajax|XMLHttpRequest)\(['"` + "`" + `]([^'"` + "`" + `]+)`),
-    }
-    
     var urls []string
-    for _, pattern := range patterns {
+    for _, pattern := range v.concatPatterns {
         matches := pattern.FindAllStringSubmatch(content, -1)
         for _, match := range matches {
             if len(match) > 1 && v.IsValidPath(match[1]) {

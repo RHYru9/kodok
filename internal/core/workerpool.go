@@ -123,15 +123,14 @@ func (wp *WorkerPool) Stop() {
         return
     }
     
-    // Cancel context first to stop accepting new work
+    // Cancel context to stop workers and prevent new work from being accepted.
+    // We intentionally do NOT close the taskQueue channel here to avoid a
+    // race condition where Submit() panics sending to a closed channel.
+    // Workers exit via ctx.Done(); remaining buffered tasks are discarded.
     if wp.cancel != nil {
         wp.cancel()
     }
-    
-    // Close task queue
-    close(wp.taskQueue)
-    
-    // Wait for workers to finish (already done via wg.Wait() in caller)
+
     wp.started = false
 }
 

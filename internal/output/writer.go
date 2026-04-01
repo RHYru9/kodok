@@ -101,14 +101,13 @@ func (w *Writer) writeTXT(results []types.ScanResult) error {
     
     // Write to file
     writer := bufio.NewWriter(w.txtFile)
-    defer writer.Flush()
-    
+
     for _, url := range urls {
         if _, err := writer.WriteString(url + "\n"); err != nil {
             return fmt.Errorf("writing URL: %w", err)
         }
     }
-    
+
     return writer.Flush()
 }
 

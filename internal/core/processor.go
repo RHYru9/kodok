@@ -73,17 +73,16 @@ func NewProcessor(
         validator:   validator,
         resultsChan: make(chan types.ScanResult, 10000), // Increase buffer
         results:     make([]types.ScanResult, 0),
-        summary: &types.Summary{
-            StartTime: time.Now(),
-        },
-        ctx:    ctx,
-        cancel: cancel,
+        summary:     &types.Summary{},
+        ctx:         ctx,
+        cancel:      cancel,
     }
 }
 
 // ProcessURLs processes a list of URLs
 func (p *Processor) ProcessURLs(urls []string) error {
     p.startTime = time.Now()
+    p.summary.StartTime = p.startTime
     p.totalURLs = len(urls)
     p.summary.TotalURLs = p.totalURLs
     
@@ -144,7 +143,10 @@ func (p *Processor) ProcessURLs(urls []string) error {
     
     // Wait for collector to finish
     <-collectorDone
-    
+
+    // Stop worker pool to release worker goroutines
+    p.workerPool.Stop()
+
     // Stop progress reporter
     if progressDone != nil {
         close(progressDone)
@@ -549,7 +551,10 @@ func (p *Processor) reportProgress(done chan struct{}) {
             
             if total > 0 {
                 percent := float64(processed) / float64(total) * 100
-                color.Yellow("Progress: %d/%d (%.1f%%) | Elapsed: %v | Queue: %d", 
+                if percent > 100 {
+                    percent = 100
+                }
+                color.Yellow("Progress: %d/%d (%.1f%%) | Elapsed: %v | Queue: %d",
                     processed, total, percent, elapsed.Round(time.Second), p.workerPool.QueuedTasks())
             }
         case <-done:
@@ -578,6 +583,7 @@ func (p *Processor) calculateSummary() {
         }
     }
     
+    p.summary.TotalURLs = len(p.results)
     p.summary.SuccessCount = successCount
     p.summary.FailedCount = failedCount
     p.summary.TotalPaths = totalPaths

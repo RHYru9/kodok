@@ -82,9 +82,20 @@ func ParseFlags() (*types.Config, string, string) {
 	config.OutputFile = output
 	config.Verbose = verbose
 
-	// Parse custom headers
+	// Parse custom headers.
+	// Split on commas, but re-join segments that don't contain ":" back onto
+	// the previous header — this allows header values that contain commas
+	// (e.g. "Cookie:a=1; b=2,Authorization:Bearer token" works correctly).
 	if headers != "" {
-		headerPairs := strings.Split(headers, ",")
+		segments := strings.Split(headers, ",")
+		var headerPairs []string
+		for _, seg := range segments {
+			if strings.Contains(seg, ":") {
+				headerPairs = append(headerPairs, seg)
+			} else if len(headerPairs) > 0 {
+				headerPairs[len(headerPairs)-1] += "," + seg
+			}
+		}
 		for _, pair := range headerPairs {
 			parts := strings.SplitN(pair, ":", 2)
 			if len(parts) == 2 {

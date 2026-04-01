@@ -71,7 +71,7 @@ func (f *Fetcher) FetchWithRetry(urlStr string, customHeaders map[string]string)
         }
     }
     
-    return "", 0, fmt.Errorf("after %d attempts: %w", f.retryAttempts, lastErr)
+    return "", 0, fmt.Errorf("after %d attempts: %w", f.retryAttempts+1, lastErr)
 }
 
 // fetch performs a single HTTP request
@@ -107,17 +107,12 @@ func (f *Fetcher) fetch(urlStr string, customHeaders map[string]string) (string,
         return "", resp.StatusCode, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
     }
     
-    // Read and filter content
+    // Read and filter content (filter already enforces 50MB limit via LimitReader)
     content, err := f.filter.ReadAndFilter(resp.Body, resp.Header)
     if err != nil {
         return "", resp.StatusCode, fmt.Errorf("reading content: %w", err)
     }
-    
-    // Check content size
-    if len(content) > 50*1024*1024 { // 50MB limit
-        return "", resp.StatusCode, fmt.Errorf("content too large: %d bytes", len(content))
-    }
-    
+
     return content, resp.StatusCode, nil
 }
 
@@ -128,23 +123,36 @@ func (f *Fetcher) validateURL(urlStr string) error {
     if err != nil {
         return fmt.Errorf("invalid URL: %w", err)
     }
-    
+
     // Check scheme
     if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
         return fmt.Errorf("unsupported scheme: %s (only http/https allowed)", parsedURL.Scheme)
     }
-    
+
     // Extract host (without port)
     host := parsedURL.Hostname()
     if host == "" {
         return fmt.Errorf("empty host")
     }
-    
-    // Check if host is safe
+
+    // Check literal hostname/IP first
     if !isSafeHost(host) {
         return fmt.Errorf("blocked host: %s (internal/private address)", host)
     }
-    
+
+    // Resolve hostname to IPs and validate each resolved address to prevent
+    // DNS rebinding attacks where a hostname passes the string check but
+    // resolves to an internal/private IP.
+    addrs, err := net.LookupHost(host)
+    if err != nil {
+        return fmt.Errorf("DNS resolution failed for %s: %w", host, err)
+    }
+    for _, addr := range addrs {
+        if !isSafeHost(addr) {
+            return fmt.Errorf("blocked host: %s resolves to internal/private address %s", host, addr)
+        }
+    }
+
     return nil
 }
 

@@ -1,6 +1,7 @@
 package cache
 
 import (
+    "fmt"
     "sync"
 
     lru "github.com/hashicorp/golang-lru"
@@ -12,26 +13,23 @@ type Deduplicator struct {
     mu    sync.RWMutex
 }
 
-// NewDeduplicator creates a new deduplicator with the specified maximum size
+// NewDeduplicator creates a new deduplicator with the specified maximum size.
+// Panics if maxSize is invalid (lru.New only fails with size <= 0, which is
+// prevented by config validation requiring size >= 100).
 func NewDeduplicator(maxSize int) *Deduplicator {
     cache, err := lru.New(maxSize)
     if err != nil {
-        // Fallback to a simple map if LRU fails (shouldn't happen with valid size)
-        return &Deduplicator{}
+        panic(fmt.Sprintf("failed to create LRU cache with size %d: %v", maxSize, err))
     }
-    
+
     return &Deduplicator{
         cache: cache,
     }
 }
 
-// CheckAndAdd checks if a URL has been processed and adds it if not
-// Returns true if the URL was already processed (duplicate)
+// CheckAndAdd checks if a URL has been processed and adds it if not.
+// Returns true if the URL was already processed (duplicate).
 func (d *Deduplicator) CheckAndAdd(url string) bool {
-    if d.cache == nil {
-        return false
-    }
-    
     // Fast path: read lock
     d.mu.RLock()
     if d.cache.Contains(url) {
@@ -39,48 +37,35 @@ func (d *Deduplicator) CheckAndAdd(url string) bool {
         return true
     }
     d.mu.RUnlock()
-    
-    // Slow path: write lock
+
+    // Slow path: write lock with double-check
     d.mu.Lock()
     defer d.mu.Unlock()
-    
-    // Double-check after acquiring write lock
+
     if d.cache.Contains(url) {
         return true
     }
-    
+
     d.cache.Add(url, struct{}{})
     return false
 }
 
-// Contains checks if a URL has been processed without adding it
+// Contains checks if a URL has been processed without adding it.
 func (d *Deduplicator) Contains(url string) bool {
-    if d.cache == nil {
-        return false
-    }
-    
     d.mu.RLock()
     defer d.mu.RUnlock()
     return d.cache.Contains(url)
 }
 
-// Len returns the number of items in the cache
+// Len returns the number of items in the cache.
 func (d *Deduplicator) Len() int {
-    if d.cache == nil {
-        return 0
-    }
-    
     d.mu.RLock()
     defer d.mu.RUnlock()
     return d.cache.Len()
 }
 
-// Purge clears the cache
+// Purge clears the cache.
 func (d *Deduplicator) Purge() {
-    if d.cache == nil {
-        return
-    }
-    
     d.mu.Lock()
     defer d.mu.Unlock()
     d.cache.Purge()
