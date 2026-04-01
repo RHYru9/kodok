@@ -94,7 +94,7 @@ func (s *SecretScanner) initPatterns() {
 			ValueGroup:  0,
 		},
 
-		// ✅ Communication & Messaging
+		// Communication & Messaging
 		{
 			Name:        "Slack Token",
 			Pattern:     regexp.MustCompile(`xox[baprs]-[0-9a-zA-Z]{10,48}`),
@@ -104,7 +104,7 @@ func (s *SecretScanner) initPatterns() {
 		},
 		{
 			Name:        "Slack Webhook URL",
-			Pattern:     regexp.MustCompile(`https://hooks\.slack\.com/services/T[A-Z0-9]+/B[A-Z0-9]+/[A-Za-z0-9]+`),
+			Pattern:     regexp.MustCompile(`\bhttps://hooks\.slack\.com/services/T[A-Z0-9]+/B[A-Z0-9]+/[A-Za-z0-9]+\b`),
 			Description: "Slack Incoming Webhook URL",
 			Confidence:  95,
 			ValueGroup:  0,
