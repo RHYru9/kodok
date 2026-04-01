@@ -104,10 +104,10 @@ func (s *SecretScanner) initPatterns() {
 		},
 		{
 			Name:        "Slack Webhook URL",
-			Pattern:     regexp.MustCompile(`\bhttps://hooks\.slack\.com/services/T[A-Z0-9]+/B[A-Z0-9]+/[A-Za-z0-9]+\b`),
+			Pattern:     regexp.MustCompile(`(?:^|[\s"'` + "`" + `(,=])(https://hooks\.slack\.com/services/T[A-Z0-9]+/B[A-Z0-9]+/[A-Za-z0-9]+)(?:[\s"'` + "`" + `),]|$)`),
 			Description: "Slack Incoming Webhook URL",
 			Confidence:  95,
-			ValueGroup:  0,
+			ValueGroup:  1,
 		},
 		{
 			Name:        "Discord Bot Token",
